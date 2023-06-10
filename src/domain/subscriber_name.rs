@@ -4,22 +4,17 @@ use unicode_segmentation::UnicodeSegmentation;
 pub struct SubscriberName(String);
 
 impl SubscriberName {
-
     pub fn parse(s: String) -> Result<Self, String> {
         let is_empty_or_whitespace = s.trim().is_empty();
         let is_tool_long = s.graphemes(true).count() > 256;
-        let forbidden_characters = ['/', '(', '"', '<', '>', '\\', '{', '}', ];
-        let contains_forbidden_characters = s
-            .chars()
-            .any(|g| forbidden_characters.contains(&g));
+        let forbidden_characters = ['/', '(', '"', '<', '>', '\\', '{', '}'];
+        let contains_forbidden_characters = s.chars().any(|g| forbidden_characters.contains(&g));
         if !(is_empty_or_whitespace || is_tool_long || contains_forbidden_characters) {
             Ok(Self(s))
         } else {
             Err(format!("{} is not a vlaid name", s))
         }
     }
-
-
 }
 
 impl AsRef<str> for SubscriberName {
@@ -59,7 +54,7 @@ mod tests {
 
     #[test]
     fn names_with_invalid_characters_are_rejected() {
-        for name in &['/', '(', '"', '<', '>', '\\', '{', '}', ] {
+        for name in &['/', '(', '"', '<', '>', '\\', '{', '}'] {
             let name = name.to_string();
             assert_err!(SubscriberName::parse(name));
         }
@@ -70,5 +65,4 @@ mod tests {
         let name = "Ursula Le Guin".to_string();
         assert_ok!(SubscriberName::parse(name));
     }
-
 }
