@@ -20,6 +20,11 @@ async fn main() -> Result<(), std::io::Error> {
     let listener = TcpListener::bind(address)?;
     let sender_email = configuration.email_client.sender().expect("email sender");
     let timeout = configuration.email_client.timeout();
-    let email_client = EmailClient::new(configuration.email_client.base_url, sender_email, configuration.email_client.authorization_token, timeout);
+    let email_client = EmailClient::new(
+        configuration.email_client.base_url,
+        sender_email,
+        configuration.email_client.authorization_token,
+        timeout,
+    );
     run(listener, connection_pool, email_client)?.await
 }
