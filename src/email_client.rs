@@ -12,7 +12,7 @@ impl EmailClient {
         Self {
             client: Client::new(),
             base_url,
-            sender
+            sender,
         }
     }
 
@@ -20,9 +20,9 @@ impl EmailClient {
         &self,
         receipient: SubscriberEmail,
         subject: &str,
-        html_content: & str,
-        text_content: &str
-        ) -> Result<(), String> {
+        html_content: &str,
+        text_content: &str,
+    ) -> Result<(), String> {
         todo!()
     }
 }
