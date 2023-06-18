@@ -44,7 +44,7 @@ async fn insert_subscriber(
     pool: &PgPool,
     new_subscriber: &NewSubscriber,
 ) -> Result<(), sqlx::Error> {
-    let response = sqlx::query!(
+    sqlx::query!(
         r#"
     INSERT INTO subscriptions (id, email, name, subscribed_at)
     VALUES ($1, $2, $3, $4)
@@ -60,6 +60,5 @@ async fn insert_subscriber(
         tracing::error!("Failed query: {:?}", e);
         e
     })?;
-    dbg!(&response);
     Ok(())
 }

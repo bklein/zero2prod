@@ -1,6 +1,6 @@
+use crate::configuration::{DatabaseSettings, Settings};
 use crate::email_client::EmailClient;
 use crate::routes::{health_check, subscribe};
-use crate::configuration::{Settings, DatabaseSettings};
 use sqlx::postgres::PgPoolOptions;
 
 use actix_web::dev::Server;
@@ -15,7 +15,6 @@ pub struct Application {
 }
 
 impl Application {
-
     pub async fn build(configuration: Settings) -> Result<Self, std::io::Error> {
         let connection_pool = get_connection_pool(&configuration.database);
         let sender_email = configuration.email_client.sender().expect("email sender");
@@ -34,7 +33,7 @@ impl Application {
         let port = listener.local_addr().unwrap().port();
         let server = run(listener, connection_pool, email_client)?;
 
-        Ok(Self { port, server})
+        Ok(Self { port, server })
     }
 
     pub fn port(&self) -> u16 {
@@ -44,7 +43,6 @@ impl Application {
     pub async fn run_until_stopped(self) -> Result<(), std::io::Error> {
         self.server.await
     }
-
 }
 
 pub fn get_connection_pool(configuration: &DatabaseSettings) -> PgPool {
