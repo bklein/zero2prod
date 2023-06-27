@@ -1,4 +1,5 @@
 use crate::domain::{NewSubscriber, SubscriberEmail, SubscriberName};
+use crate::email_client::EmailClient;
 use actix_web::{web, HttpResponse};
 use chrono::Utc;
 use sqlx::PgPool;
@@ -22,21 +23,24 @@ impl TryFrom<FormData> for NewSubscriber {
 
 #[tracing::instrument(
     name = "Adding a new subscriber",
-    skip(form, pool),
+    skip(form, pool, email_client),
     fields(
         subscriber_email = %form.email,
         subscriber_name = %form.name
     )
 )]
-pub async fn subscribe(form: web::Form<FormData>, pool: web::Data<PgPool>) -> HttpResponse {
+pub async fn subscribe(form: web::Form<FormData>, pool: web::Data<PgPool>, email_client: web::Data<EmailClient>) -> HttpResponse {
     let new_subscriber = match form.0.try_into() {
-        Ok(new_subscriber) => new_subscriber,
+        Ok(form) => form,
         Err(_) => return HttpResponse::BadRequest().finish(),
     };
-    match insert_subscriber(&pool, &new_subscriber).await {
-        Ok(_) => HttpResponse::Ok().finish(),
-        Err(_) => HttpResponse::InternalServerError().finish(),
+    if insert_subscriber(&pool, &new_subscriber).await.is_err() {
+        return HttpResponse::InternalServerError().finish();
     }
+    if send_confirmation_email(&email_client, new_subscriber).await.is_err() {
+        return HttpResponse::InternalServerError().finish();
+    }
+    HttpResponse::Ok().finish()
 }
 
 #[tracing::instrument(name = "Saving new subscriber in db.", skip(new_subscriber, pool))]
@@ -61,4 +65,28 @@ async fn insert_subscriber(
         e
     })?;
     Ok(())
+}
+
+#[tracing::instrument(name = "Send confirmation email to a new subscriber",
+                      skip(new_subscriber, email_client))]
+async fn send_confirmation_email(email_client: &EmailClient, new_subscriber: NewSubscriber) -> Result<(), reqwest::Error> {
+    let confirmation_link = "https://example.com/subscriptions/confirm";
+    let plain_body =
+            &format!(
+                "Welcome to our newsletter!\n\
+                Visit {} to confirm your subscription.",
+                confirmation_link);
+    let html_body =
+            &format!(
+                "Welcome to our newsletter!<br />\
+                Click <a href=\"{}\">here</a> to confirm your subscription.",
+                confirmation_link
+            );
+    email_client.send_email(
+        new_subscriber.email,
+            "Welcome!",
+            html_body,
+            plain_body,
+        )
+        .await
 }
