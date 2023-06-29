@@ -1,7 +1,7 @@
 watch-run:
   cargo watch -x check -x test -x run
 
-watch:
+test:
   cargo watch -x test
 
 run:
