@@ -3,10 +3,10 @@ use crate::email_client::EmailClient;
 use crate::startup::ApplicationBaseUrl;
 use actix_web::{web, HttpResponse};
 use chrono::Utc;
-use sqlx::PgPool;
-use uuid::Uuid;
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
+use sqlx::PgPool;
+use uuid::Uuid;
 
 #[derive(serde::Deserialize)]
 pub struct FormData {
@@ -47,12 +47,20 @@ pub async fn subscribe(
         Err(_) => return HttpResponse::InternalServerError().finish(),
     };
     let confirmation_token = generate_confirmation_token();
-    if store_token(&pool, subscriber_id, &confirmation_token).await.is_err() {
-        return HttpResponse::InternalServerError().finish();
-    }
-    if send_confirmation_email(&email_client, new_subscriber, &base_url.0, &confirmation_token)
+    if store_token(&pool, subscriber_id, &confirmation_token)
         .await
         .is_err()
+    {
+        return HttpResponse::InternalServerError().finish();
+    }
+    if send_confirmation_email(
+        &email_client,
+        new_subscriber,
+        &base_url.0,
+        &confirmation_token,
+    )
+    .await
+    .is_err()
     {
         return HttpResponse::InternalServerError().finish();
     }
@@ -63,18 +71,23 @@ pub async fn subscribe(
     name = "Store confirmation token into database"
     skip(confirmation_token, pool)
 )]
-async fn store_token(pool: &PgPool, subscriber_id: Uuid, confirmation_token: &str) -> Result<(), sqlx::Error> {
+async fn store_token(
+    pool: &PgPool,
+    subscriber_id: Uuid,
+    confirmation_token: &str,
+) -> Result<(), sqlx::Error> {
     sqlx::query!(
-    r#"INSERT INTO subscriptions_tokens (subscriptions_token, subscriber_id)
+        r#"INSERT INTO subscriptions_tokens (subscriptions_token, subscriber_id)
     VALUES ($1, $2)"#,
-    confirmation_token,
-    subscriber_id)
-        .execute(pool)
-        .await
-        .map_err(|e| {
-            tracing::error!("Failed to execute query: {:?}", e);
-            e
-        })?;
+        confirmation_token,
+        subscriber_id
+    )
+    .execute(pool)
+    .await
+    .map_err(|e| {
+        tracing::error!("Failed to execute query: {:?}", e);
+        e
+    })?;
     Ok(())
 }
 
@@ -113,7 +126,10 @@ async fn send_confirmation_email(
     base_url: &str,
     confirmation_token: &str,
 ) -> Result<(), reqwest::Error> {
-    let confirmation_link = format!("{}/subscriptions/confirm?subscription_token={}", base_url, confirmation_token);
+    let confirmation_link = format!(
+        "{}/subscriptions/confirm?subscription_token={}",
+        base_url, confirmation_token
+    );
     let plain_body = &format!(
         "Welcome to our newsletter!\n\
                 Visit {} to confirm your subscription.",
