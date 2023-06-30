@@ -5,6 +5,8 @@ use actix_web::{web, HttpResponse};
 use chrono::Utc;
 use sqlx::PgPool;
 use uuid::Uuid;
+use rand::distributions::Alphanumeric;
+use rand::{thread_rng, Rng};
 
 #[derive(serde::Deserialize)]
 pub struct FormData {
@@ -40,10 +42,15 @@ pub async fn subscribe(
         Ok(form) => form,
         Err(_) => return HttpResponse::BadRequest().finish(),
     };
-    if insert_subscriber(&pool, &new_subscriber).await.is_err() {
+    let subscriber_id = match insert_subscriber(&pool, &new_subscriber).await {
+        Ok(subscriber_id) => subscriber_id,
+        Err(_) => return HttpResponse::InternalServerError().finish(),
+    };
+    let confirmation_token = generate_confirmation_token();
+    if store_token(&pool, subscriber_id, &confirmation_token).await.is_err() {
         return HttpResponse::InternalServerError().finish();
     }
-    if send_confirmation_email(&email_client, new_subscriber, &base_url.0)
+    if send_confirmation_email(&email_client, new_subscriber, &base_url.0, &confirmation_token)
         .await
         .is_err()
     {
@@ -52,17 +59,37 @@ pub async fn subscribe(
     HttpResponse::Ok().finish()
 }
 
+#[tracing::instrument(
+    name = "Store confirmation token into database"
+    skip(confirmation_token, pool)
+)]
+async fn store_token(pool: &PgPool, subscriber_id: Uuid, confirmation_token: &str) -> Result<(), sqlx::Error> {
+    sqlx::query!(
+    r#"INSERT INTO subscriptions_tokens (subscriptions_token, subscriber_id)
+    VALUES ($1, $2)"#,
+    confirmation_token,
+    subscriber_id)
+        .execute(pool)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to execute query: {:?}", e);
+            e
+        })?;
+    Ok(())
+}
+
 #[tracing::instrument(name = "Saving new subscriber in db.", skip(new_subscriber, pool))]
 async fn insert_subscriber(
     pool: &PgPool,
     new_subscriber: &NewSubscriber,
-) -> Result<(), sqlx::Error> {
+) -> Result<Uuid, sqlx::Error> {
+    let subscriber_id = Uuid::new_v4();
     sqlx::query!(
         r#"
     INSERT INTO subscriptions (id, email, name, subscribed_at, status)
     VALUES ($1, $2, $3, $4, 'pending_confirmation')
             "#,
-        Uuid::new_v4(),
+        subscriber_id,
         new_subscriber.email.as_ref(),
         new_subscriber.name.as_ref(),
         Utc::now()
@@ -73,20 +100,20 @@ async fn insert_subscriber(
         tracing::error!("Failed query: {:?}", e);
         e
     })?;
-    Ok(())
+    Ok(subscriber_id)
 }
 
 #[tracing::instrument(
     name = "Send confirmation email to a new subscriber",
-    skip(new_subscriber, email_client, base_url)
+    skip(new_subscriber, email_client, base_url, confirmation_token)
 )]
 async fn send_confirmation_email(
     email_client: &EmailClient,
     new_subscriber: NewSubscriber,
     base_url: &str,
+    confirmation_token: &str,
 ) -> Result<(), reqwest::Error> {
-    let token = "notarealtoken";
-    let confirmation_link = format!("{}/subscriptions/confirm?subscription_token={}", base_url, token);
+    let confirmation_link = format!("{}/subscriptions/confirm?subscription_token={}", base_url, confirmation_token);
     let plain_body = &format!(
         "Welcome to our newsletter!\n\
                 Visit {} to confirm your subscription.",
@@ -100,4 +127,12 @@ async fn send_confirmation_email(
     email_client
         .send_email(new_subscriber.email, "Welcome!", html_body, plain_body)
         .await
+}
+
+fn generate_confirmation_token() -> String {
+    let mut rng = thread_rng();
+    std::iter::repeat_with(|| rng.sample(Alphanumeric))
+        .map(char::from)
+        .take(25)
+        .collect()
 }
