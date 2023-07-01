@@ -5,7 +5,7 @@ use actix_web::{web, HttpResponse};
 use chrono::Utc;
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
-use sqlx::{Postgres, Transaction, PgPool};
+use sqlx::{PgPool, Postgres, Transaction};
 use uuid::Uuid;
 
 #[derive(serde::Deserialize)]
@@ -98,7 +98,10 @@ async fn store_token(
     Ok(())
 }
 
-#[tracing::instrument(name = "Saving new subscriber in db.", skip(new_subscriber, transaction))]
+#[tracing::instrument(
+    name = "Saving new subscriber in db.",
+    skip(new_subscriber, transaction)
+)]
 async fn insert_subscriber(
     transaction: &mut Transaction<'_, Postgres>,
     new_subscriber: &NewSubscriber,
