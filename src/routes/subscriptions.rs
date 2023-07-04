@@ -1,14 +1,14 @@
 use crate::domain::{NewSubscriber, SubscriberEmail, SubscriberName};
 use crate::email_client::EmailClient;
 use crate::startup::ApplicationBaseUrl;
+use actix_web::http::StatusCode;
+use actix_web::ResponseError;
 use actix_web::{web, HttpResponse};
 use chrono::Utc;
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
 use sqlx::{PgPool, Postgres, Transaction};
 use uuid::Uuid;
-use actix_web::ResponseError;
-use actix_web::http::StatusCode;
 
 #[derive(serde::Deserialize)]
 pub struct FormData {
@@ -42,10 +42,15 @@ pub async fn subscribe(
 ) -> Result<HttpResponse, SubscribeError> {
     let new_subscriber = form.0.try_into()?;
     let mut transaction = pool.begin().await.map_err(SubscribeError::PoolError)?;
-    let subscriber_id = insert_subscriber(&mut transaction, &new_subscriber).await.map_err(SubscribeError::InsertSubscriberError)?;
+    let subscriber_id = insert_subscriber(&mut transaction, &new_subscriber)
+        .await
+        .map_err(SubscribeError::InsertSubscriberError)?;
     let confirmation_token = generate_confirmation_token();
     store_token(&mut transaction, subscriber_id, &confirmation_token).await?;
-    transaction.commit().await.map_err(SubscribeError::TransactionCommitError)?;
+    transaction
+        .commit()
+        .await
+        .map_err(SubscribeError::TransactionCommitError)?;
     send_confirmation_email(
         &email_client,
         new_subscriber,
@@ -75,7 +80,7 @@ async fn store_token(
     .await
     .map_err(|e| {
         tracing::error!("Failed to execute query: {:?}", e);
-        SubscribeError::StoreTokenError(StoreTokenError{})
+        SubscribeError::StoreTokenError(StoreTokenError {})
     })?;
     Ok(())
 }
@@ -146,7 +151,7 @@ fn generate_confirmation_token() -> String {
 }
 
 #[derive(Debug)]
-pub struct StoreTokenError{}
+pub struct StoreTokenError {}
 
 impl std::fmt::Display for StoreTokenError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
@@ -174,11 +179,18 @@ impl std::fmt::Debug for SubscribeError {
 impl std::fmt::Display for SubscribeError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self {
-            SubscribeError::InsertSubscriberError(_) => write!(f, "Failed to insert subscriber into db."),
+            SubscribeError::InsertSubscriberError(_) => {
+                write!(f, "Failed to insert subscriber into db.")
+            }
             SubscribeError::PoolError(_) => write!(f, "Failed to connect to db pool."),
             SubscribeError::SendEmailError(_) => write!(f, "Failed to send confirmation email."),
-            SubscribeError::StoreTokenError(_) => write!(f, "Failed to store the confirmation token for a new subscription."),
-            SubscribeError::TransactionCommitError(_) => write!(f, "Failed to commit db transaction."),
+            SubscribeError::StoreTokenError(_) => write!(
+                f,
+                "Failed to store the confirmation token for a new subscription."
+            ),
+            SubscribeError::TransactionCommitError(_) => {
+                write!(f, "Failed to commit db transaction.")
+            }
             SubscribeError::ValidationError(e) => write!(f, "{}", e),
         }
     }
