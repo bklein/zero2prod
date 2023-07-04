@@ -1,3 +1,4 @@
+use actix_web::http::StatusCode;
 use actix_web::ResponseError;
 use actix_web::{web, HttpResponse};
 use anyhow::Context;
@@ -18,11 +19,11 @@ pub async fn confirm(
         .await
         .context("Failed to execute db query.")?;
     match id {
-        None => Ok(HttpResponse::Unauthorized().finish()),
+        None => Err(ConfirmError::InvalidToken),
         Some(subscriber_id) => {
             confirm_subscriber(&pool, subscriber_id)
                 .await
-                .context("Invalid confirmation token.")?;
+                .context("Failed to update db")?;
             Ok(HttpResponse::Ok().finish())
         }
     }
@@ -54,16 +55,30 @@ async fn get_subscriber_id_from_token(
     Ok(result.map(|r| r.subscriber_id))
 }
 
-#[derive(thiserror::Error)]
+#[derive(Debug)]
+pub struct InvalidToken {}
+
+impl std::error::Error for InvalidToken {}
+
+impl std::fmt::Display for InvalidToken {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "The token was invalid or there was no associated user.")
+    }
+}
+
+#[derive(Debug, thiserror::Error)]
 pub enum ConfirmError {
+    #[error("Invalid confirmation token")]
+    InvalidToken,
     #[error(transparent)]
     UnexpectedError(#[from] anyhow::Error),
 }
 
-impl ResponseError for ConfirmError {}
-
-impl std::fmt::Debug for ConfirmError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "todo")
+impl ResponseError for ConfirmError {
+    fn status_code(&self) -> StatusCode {
+        match self {
+            ConfirmError::InvalidToken => StatusCode::UNAUTHORIZED,
+            ConfirmError::UnexpectedError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+        }
     }
 }
