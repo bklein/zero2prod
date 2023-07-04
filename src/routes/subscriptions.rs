@@ -4,12 +4,12 @@ use crate::startup::ApplicationBaseUrl;
 use actix_web::http::StatusCode;
 use actix_web::ResponseError;
 use actix_web::{web, HttpResponse};
+use anyhow::Context;
 use chrono::Utc;
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
 use sqlx::{PgPool, Postgres, Transaction};
 use uuid::Uuid;
-use anyhow::Context;
 
 #[derive(serde::Deserialize)]
 pub struct FormData {
@@ -47,7 +47,8 @@ pub async fn subscribe(
         .await
         .context("Failed to insert subscriber into db.")?;
     let confirmation_token = generate_confirmation_token();
-    store_token(&mut transaction, subscriber_id, &confirmation_token).await
+    store_token(&mut transaction, subscriber_id, &confirmation_token)
+        .await
         .context("Failed to store the confirmation token for a new subscription.")?;
     transaction
         .commit()
@@ -59,7 +60,8 @@ pub async fn subscribe(
         &base_url.0,
         &confirmation_token,
     )
-    .await.context("Failed to send confirmation email.")?;
+    .await
+    .context("Failed to send confirmation email.")?;
     Ok(HttpResponse::Ok().finish())
 }
 
@@ -80,9 +82,7 @@ async fn store_token(
     )
     .execute(transaction)
     .await
-    .map_err(|e| {
-        StoreTokenError(e)
-    })?;
+    .map_err(|e| StoreTokenError(e))?;
     Ok(())
 }
 
