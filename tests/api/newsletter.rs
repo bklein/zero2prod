@@ -60,25 +60,21 @@ async fn newsletters_returns_400_for_invalid_data() {
                     "html": "<p>Newsletter html body.",
                 }
             }),
-            "missing title"
+            "missing title",
         ),
         (
             serde_json::json!({
                 "title": "Newsletter title"
             }),
-            "missing content"
-        )
+            "missing content",
+        ),
     ];
 
     for (invalid_body, error_message) in test_cases {
         let response = app.post_newsletters(invalid_body).await;
-        assert_eq!(
-            400,
-            response.status().as_u16(),
-            "Error: {}", error_message);
+        assert_eq!(400, response.status().as_u16(), "Error: {}", error_message);
     }
 }
-
 
 async fn create_unconfirmed_subscriber(app: &TestApp) -> ConfirmationLinks {
     let body = "name=fred&email=fred@example.com";

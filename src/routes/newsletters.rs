@@ -1,8 +1,7 @@
-use actix_web::{web,HttpResponse};
-use sqlx::PgPool;
-use actix_web::ResponseError;
 use crate::routes::error_chain_fmt;
 use actix_web::http::StatusCode;
+use actix_web::{web, HttpResponse, ResponseError};
+use sqlx::PgPool;
 
 #[derive(thiserror::Error)]
 pub enum PublishError {
@@ -27,7 +26,7 @@ impl ResponseError for PublishError {
 #[derive(serde::Deserialize)]
 pub struct BodyData {
     title: String,
-    content: Content
+    content: Content,
 }
 
 #[derive(serde::Deserialize)]
@@ -36,7 +35,10 @@ pub struct Content {
     text: String,
 }
 
-pub async fn publish_newsletter(_body: web::Json<BodyData>, pool: web::Data<PgPool>) -> Result<HttpResponse, PublishError> {
+pub async fn publish_newsletter(
+    _body: web::Json<BodyData>,
+    pool: web::Data<PgPool>,
+) -> Result<HttpResponse, PublishError> {
     let _subscribers = get_confirmed_subscribers(&pool).await?;
     Ok(HttpResponse::Ok().finish())
 }
@@ -46,7 +48,9 @@ struct ConfirmedSubscriber {
 }
 
 #[tracing::instrument(name = "Get confirmed subsribers", skip(pool))]
-async fn get_confirmed_subscribers(pool: &PgPool) -> Result<Vec<ConfirmedSubscriber>, anyhow::Error> {
+async fn get_confirmed_subscribers(
+    pool: &PgPool,
+) -> Result<Vec<ConfirmedSubscriber>, anyhow::Error> {
     let rows = sqlx::query_as!(
         ConfirmedSubscriber,
         r#"
@@ -54,8 +58,8 @@ async fn get_confirmed_subscribers(pool: &PgPool) -> Result<Vec<ConfirmedSubscri
         FROM subscriptions
         WHERE status = 'confirmed'
         "#,
-        )
-        .fetch_all(pool)
-        .await?;
-        Ok(rows)
+    )
+    .fetch_all(pool)
+    .await?;
+    Ok(rows)
 }
