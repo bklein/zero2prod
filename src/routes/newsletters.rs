@@ -1,10 +1,10 @@
-use crate::routes::error_chain_fmt;
-use crate::email_client::EmailClient;
 use crate::domain::SubscriberEmail;
+use crate::email_client::EmailClient;
+use crate::routes::error_chain_fmt;
 use actix_web::http::StatusCode;
 use actix_web::{web, HttpResponse, ResponseError};
-use sqlx::PgPool;
 use anyhow::Context;
+use sqlx::PgPool;
 
 #[derive(thiserror::Error)]
 pub enum PublishError {
@@ -53,12 +53,12 @@ pub async fn publish_newsletter(
                         &body.title,
                         &body.content.html,
                         &body.content.text,
-                        )
+                    )
                     .await
                     .with_context(|| {
                         format!("Failed to send newsletter issue to {}", subscriber.email)
                     })?;
-            },
+            }
             Err(error) => {
                 tracing::warn!(
                     error.cause_chain = ?error,
@@ -91,7 +91,7 @@ async fn get_confirmed_subscribers(
     let confirmed_subscribers = rows
         .into_iter()
         .map(|r| match SubscriberEmail::parse(r.email) {
-            Ok(email) => Ok(ConfirmedSubscriber{email}),
+            Ok(email) => Ok(ConfirmedSubscriber { email }),
             Err(error) => Err(anyhow::anyhow!(error)),
         })
         .collect();
