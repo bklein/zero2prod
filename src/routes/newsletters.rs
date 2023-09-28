@@ -1,15 +1,15 @@
 use crate::domain::SubscriberEmail;
 use crate::email_client::EmailClient;
 use crate::routes::error_chain_fmt;
+use actix_web::http::header::{HeaderMap, HeaderValue};
 use actix_web::http::{header, StatusCode};
 use actix_web::HttpRequest;
 use actix_web::{web, HttpResponse, ResponseError};
-use secrecy::Secret;
-use actix_web::http::header::{HeaderMap, HeaderValue};
 use anyhow::Context;
-use sqlx::PgPool;
 use base64::Engine;
 use secrecy::ExposeSecret;
+use secrecy::Secret;
+use sqlx::PgPool;
 
 #[derive(thiserror::Error)]
 pub enum PublishError {
@@ -40,8 +40,7 @@ impl ResponseError for PublishError {
             }
             PublishError::AuthError(_) => {
                 let mut response = HttpResponse::new(StatusCode::UNAUTHORIZED);
-                let header_value = HeaderValue::from_str(r#"Basic realm="publish""#)
-                    .unwrap();
+                let header_value = HeaderValue::from_str(r#"Basic realm="publish""#).unwrap();
                 response
                     .headers_mut()
                     .insert(header::WWW_AUTHENTICATE, header_value);
@@ -65,7 +64,7 @@ pub struct Content {
 
 async fn validate_credentials(
     credentials: Credentials,
-    pool: &PgPool
+    pool: &PgPool,
 ) -> Result<uuid::Uuid, PublishError> {
     let user_id: Option<_> = sqlx::query!(
         r#"
@@ -75,11 +74,11 @@ async fn validate_credentials(
         "#,
         credentials.username,
         credentials.password.expose_secret()
-        )
-        .fetch_optional(pool)
-        .await
-        .context("Failed query to validate credentials")
-        .map_err(PublishError::UnexpectedError)?;
+    )
+    .fetch_optional(pool)
+    .await
+    .context("Failed query to validate credentials")
+    .map_err(PublishError::UnexpectedError)?;
     user_id
         .map(|row| row.user_id)
         .ok_or_else(|| anyhow::anyhow!("Invalid username or password"))
@@ -97,12 +96,8 @@ pub async fn publish_newsletter(
     email_client: web::Data<EmailClient>,
     request: HttpRequest,
 ) -> Result<HttpResponse, PublishError> {
-    let credentials = basic_authentication(request.headers())
-        .map_err(PublishError::AuthError)?;
-    tracing::Span::current().record(
-        "username",
-        &tracing::field::display(&credentials.username)
-    );
+    let credentials = basic_authentication(request.headers()).map_err(PublishError::AuthError)?;
+    tracing::Span::current().record("username", &tracing::field::display(&credentials.username));
     let user_id = validate_credentials(credentials, &pool).await?;
     tracing::Span::current().record("user_id", &tracing::field::display(&user_id));
     let subscribers = get_confirmed_subscribers(&pool).await?;
@@ -135,7 +130,7 @@ pub async fn publish_newsletter(
 
 struct Credentials {
     username: String,
-    password: Secret<String>
+    password: Secret<String>,
 }
 
 fn basic_authentication(headers: &HeaderMap) -> Result<Credentials, anyhow::Error> {
@@ -145,29 +140,23 @@ fn basic_authentication(headers: &HeaderMap) -> Result<Credentials, anyhow::Erro
         .to_str()
         .context("The 'Authorization' header was not valid UTF-8")?;
 
-    let base64encoded_segment = header_value
-        .strip_prefix("Basic ")
-        .context("Not basic")?;
+    let base64encoded_segment = header_value.strip_prefix("Basic ").context("Not basic")?;
 
     let decoded_bytes = base64::engine::general_purpose::STANDARD
         .decode(base64encoded_segment)
         .context("not base64")?;
 
-    let decoded_credentials = String::from_utf8(decoded_bytes)
-        .context("Decoded base64 is not valid UTF-8")?;
+    let decoded_credentials =
+        String::from_utf8(decoded_bytes).context("Decoded base64 is not valid UTF-8")?;
 
     let mut credentials = decoded_credentials.splitn(2, ':');
     let username = credentials
         .next()
-        .ok_or_else(|| {
-            anyhow::anyhow!("Must provide username")
-        })?
+        .ok_or_else(|| anyhow::anyhow!("Must provide username"))?
         .to_string();
     let password = credentials
         .next()
-        .ok_or_else(|| {
-            anyhow::anyhow!("Must provide password")
-        })?
+        .ok_or_else(|| anyhow::anyhow!("Must provide password"))?
         .to_string();
     Ok(Credentials {
         username,

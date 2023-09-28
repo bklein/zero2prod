@@ -129,5 +129,8 @@ async fn requests_missing_authorization_are_rejected() {
         .expect("Failed to execute request");
 
     assert_eq!(401, response.status().as_u16());
-    assert_eq!(r#"Basic realm="publish""#, response.headers()["WWW-Authenticate"]);
+    assert_eq!(
+        r#"Basic realm="publish""#,
+        response.headers()["WWW-Authenticate"]
+    );
 }
