@@ -31,6 +31,7 @@ pub struct TestApp {
     pub connection_pool: PgPool,
     pub email_server: MockServer,
     pub test_user: TestUser,
+    pub app_client: reqwest::Client,
 }
 
 pub struct TestUser {
@@ -73,7 +74,7 @@ impl TestUser {
 
 impl TestApp {
     pub async fn post_subscriptions(&self, body: String) -> reqwest::Response {
-        reqwest::Client::new()
+        self.app_client
             .post(&format!("{}/subscriptions", &self.address))
             .header("Content-Type", "application/x-www-form-urlencoded")
             .body(body)
@@ -83,7 +84,7 @@ impl TestApp {
     }
 
     pub async fn post_newsletters(&self, body: serde_json::Value) -> reqwest::Response {
-        reqwest::Client::new()
+        self.app_client
             .post(&format!("{}/newsletters", &self.address))
             .basic_auth(&self.test_user.username, Some(&self.test_user.password))
             .json(&body)
@@ -112,6 +113,29 @@ impl TestApp {
         let plain_text = get_link(&body["TextBody"].as_str().unwrap());
         ConfirmationLinks { html, plain_text }
     }
+
+    pub async fn post_login<Body>(&self, body: &Body) -> reqwest::Response
+    where
+        Body: serde::Serialize,
+    {
+        self.app_client
+            .post(&format!("{}/login", &self.address))
+            .form(body)
+            .send()
+            .await
+            .expect("Failed to execute request.")
+    }
+
+    pub async fn get_login_html(&self) -> String {
+        self.app_client
+            .get(&format!("{}/login", &self.address))
+            .send()
+            .await
+            .expect("Failed request")
+            .text()
+            .await
+            .unwrap()
+    }
 }
 
 pub async fn spawn_app() -> TestApp {
@@ -135,12 +159,18 @@ pub async fn spawn_app() -> TestApp {
 
     let application_port = application.port();
     let _ = tokio::spawn(application.run_until_stopped());
+    let client = reqwest::ClientBuilder::new()
+        .redirect(reqwest::redirect::Policy::none())
+        .cookie_store(true)
+        .build()
+        .unwrap();
     let test_app = TestApp {
         address: format!("http://localhost:{}", application_port),
         port: application_port,
         connection_pool: get_connection_pool(&configuration.database),
         email_server,
         test_user: TestUser::generate(),
+        app_client: client,
     };
     test_app.test_user.store(&test_app.connection_pool).await;
     test_app
@@ -162,4 +192,9 @@ async fn configure_database(config: &DatabaseSettings) -> PgPool {
         .await
         .expect("migrations");
     connection_pool
+}
+
+pub fn assert_is_redirect_to_(response: &reqwest::Response, location: &str) {
+    assert_eq!(response.status().as_u16(), 303);
+    assert_eq!(response.headers().get("Location").unwrap(), location);
 }
