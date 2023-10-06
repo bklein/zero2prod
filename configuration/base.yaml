@@ -1,5 +1,6 @@
 application:
   port: 8000
+  hmac_secret: "e3eac41f74ad5b4601b8f527c1d8b49c8c1877b685f4e72a848c58b41897cc39c9c0dcc5ebac06174fb6db6394f6ffac1b18cda9561bc23c84c4d66fab07408f"
 database:
   host: "localhost"
   port: 5432
@@ -8,3 +9,4 @@ database:
   database_name: "newsletter"
 email_client:
   timeout_milliseconds: 10000
+redis_uri: "redis://127.0.0.1:6379"
