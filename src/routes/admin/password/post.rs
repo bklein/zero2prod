@@ -44,5 +44,15 @@ pub async fn change_password(
             AuthError::UnexpectedError(_) => Err(e500(e)),
         };
     }
+
+    if form.0.new_password.expose_secret().len() <= 12 {
+        FlashMessage::error("The new password is too short.").send();
+        return Ok(see_other("/admin/password"));
+    }
+    if form.0.new_password.expose_secret().len() > 128 {
+        FlashMessage::error("The new password is too long.").send();
+        return Ok(see_other("/admin/password"));
+    }
+
     todo!()
 }

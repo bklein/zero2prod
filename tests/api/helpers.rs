@@ -126,6 +126,14 @@ impl TestApp {
             .expect("Failed to execute request.")
     }
 
+    pub async fn post_logout(&self) -> reqwest::Response {
+        self.app_client
+            .post(&format!("{}/admin/logout", &self.address))
+            .send()
+            .await
+            .expect("Failed to execute request.")
+    }
+
     pub async fn get_login_html(&self) -> String {
         self.app_client
             .get(&format!("{}/login", &self.address))

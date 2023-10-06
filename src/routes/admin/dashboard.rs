@@ -29,6 +29,10 @@ pub async fn admin_dashboard(
     <p>Available Actions</p>
     <ol>
         <li><a href="/admin/password">Change password</a></li>
+        <li>
+            <form name="logoutForm" action="/admin/logout" method="post">
+                <input type="submit" value="Logout">
+            </form>
     </ol>
 </body>
 </html>
