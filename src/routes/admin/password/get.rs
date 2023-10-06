@@ -29,7 +29,7 @@ pub async fn change_password_form(
     <form action="/admin/password" method="post">
         <label>Current password
         <input
-            type="text"
+            type="password"
             placeholder="Enter current password"
             name="current_password"
           >
