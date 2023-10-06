@@ -79,7 +79,7 @@ async fn current_password_must_be_valid() {
 #[tokio::test]
 async fn new_password_must_be_at_least_minimum_length() {
     let app = spawn_app().await;
-    let new_password: String = std::iter::repeat("x").take(12).collect();
+    let new_password: String = "x".repeat(12);
 
     app.post_login(&serde_json::json!({
         "username": &app.test_user.username,
@@ -103,7 +103,7 @@ async fn new_password_must_be_at_least_minimum_length() {
 #[tokio::test]
 async fn new_password_must_not_be_more_than_max_length() {
     let app = spawn_app().await;
-    let new_password: String = std::iter::repeat("x").take(129).collect();
+    let new_password: String = "x".repeat(129);
 
     app.post_login(&serde_json::json!({
         "username": &app.test_user.username,
