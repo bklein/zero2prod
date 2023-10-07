@@ -31,5 +31,11 @@ pub fn register_templates<'reg>() -> TemplateRegistry<'reg> {
             &template_root(&["admin", "password", "get.hbs"]),
         )
         .expect("Failed to load template");
+    handlebars
+        .register_template_file(
+            "flash_messages",
+            &template_root(&["partials", "flash_messages.hbs"]),
+        )
+        .expect("Failed to load template");
     TemplateRegistry(handlebars)
 }
