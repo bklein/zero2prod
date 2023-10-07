@@ -7,3 +7,12 @@ async fn you_must_be_logged_in_to_access_the_admin_dashboard() {
 
     assert_is_redirect_to_(&response, "/login");
 }
+
+#[tokio::test]
+async fn dashboard_has_a_link_to_create_newsletter() {
+    let app = spawn_app().await;
+    app.login_test_user().await;
+
+    let html = app.get_admin_dashboard_html().await;
+    assert!(html.contains(r#"href="/admin/newsletters""#));
+}
