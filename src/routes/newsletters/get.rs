@@ -1,7 +1,14 @@
 use actix_web::{http::header::ContentType, HttpResponse};
+use actix_web_flash_messages::IncomingFlashMessages;
+use std::fmt::Write;
 
-pub async fn get_newsletters_form() -> Result<HttpResponse, actix_web::Error> {
-    let error_html = String::new();
+pub async fn get_newsletters_form(
+    flast_message: IncomingFlashMessages,
+) -> Result<HttpResponse, actix_web::Error> {
+    let mut error_html = String::new();
+    for m in flast_message.iter() {
+        writeln!(error_html, "<p><i>{}</i></p>", m.content()).unwrap();
+    }
     Ok(HttpResponse::Ok()
         .content_type(ContentType::html())
         .body(format!(
@@ -28,8 +35,7 @@ pub async fn get_newsletters_form() -> Result<HttpResponse, actix_web::Error> {
           <textarea
               placeholder="Enter newsletter content"
               name="html"
-            >
-          </textarea>
+            ></textarea>
       </label>
       <br />
       <label>Newsletter text content
@@ -37,8 +43,7 @@ pub async fn get_newsletters_form() -> Result<HttpResponse, actix_web::Error> {
           <textarea
               placeholder="Enter newsletter content"
               name="text"
-            >
-            </textarea>
+            ></textarea>
       </label>
       <br />
       <button type="submit">Send newsletter</button>

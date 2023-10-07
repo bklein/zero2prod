@@ -24,8 +24,10 @@ async fn newsletters_are_not_delivered_to_unconfirmed_subscribers() {
     });
 
     let response = app.post_newsletters(&newsletter_request_body).await;
-    dbg!(&response);
-    assert_eq!(response.status().as_u16(), 200);
+    assert_is_redirect_to_(&response, "/admin/dashboard");
+
+    let html_page = app.get_admin_dashboard_html().await;
+    assert!(html_page.contains("Sent newsletter successfully."));
 }
 
 #[tokio::test]
@@ -46,32 +48,10 @@ async fn newsletters_are_delivered_to_confirmed_subscribers() {
     });
 
     let response = app.post_newsletters(&newsletter_request_body).await;
-    assert_eq!(response.status().as_u16(), 200);
-}
+    assert_is_redirect_to_(&response, "/admin/dashboard");
 
-#[tokio::test]
-async fn newsletters_returns_400_for_invalid_data() {
-    let app = spawn_app_logged_in().await;
-    let test_cases = vec![
-        (
-            serde_json::json!({
-                "text": "Newsletter plain text body.",
-                "html": "<p>Newsletter html body.",
-            }),
-            "missing title",
-        ),
-        (
-            serde_json::json!({
-                "title": "Newsletter title"
-            }),
-            "missing content",
-        ),
-    ];
-
-    for (invalid_body, error_message) in test_cases {
-        let response = app.post_newsletters(&invalid_body).await;
-        assert_eq!(400, response.status().as_u16(), "Error: {}", error_message);
-    }
+    let html_page = app.get_admin_dashboard_html().await;
+    assert!(html_page.contains("Sent newsletter successfully."));
 }
 
 async fn create_unconfirmed_subscriber(app: &TestApp) -> ConfirmationLinks {
@@ -133,9 +113,6 @@ async fn must_be_logged_in_to_create_newsletter() {
 #[tokio::test]
 async fn new_newsletter_page_has_form() {
     let app = spawn_app_logged_in().await;
-
-    let response = app.get_newsletters().await;
-    assert_eq!(response.status().as_u16(), 200);
 
     let html = app.get_newsletters_html().await;
     assert!(html.contains("<form"));
