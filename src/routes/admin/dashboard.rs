@@ -1,12 +1,15 @@
 use crate::session_state::TypedSession;
 use crate::utils::{e500, see_other};
 use actix_web::{http::header::ContentType, web, HttpResponse};
+use actix_web_flash_messages::IncomingFlashMessages;
 use anyhow::Context;
 use sqlx::PgPool;
+use std::fmt::Write;
 use uuid::Uuid;
 
 pub async fn admin_dashboard(
     session: TypedSession,
+    flash_messages: IncomingFlashMessages,
     pool: web::Data<PgPool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let username = if let Some(user_id) = session.get_user_id().map_err(e500)? {
@@ -14,6 +17,11 @@ pub async fn admin_dashboard(
     } else {
         return Ok(see_other("/login"));
     };
+
+    let mut msg_html = String::new();
+    for m in flash_messages.iter() {
+        writeln!(msg_html, "<p><i>{}</i></p>", m.content()).unwrap();
+    }
 
     Ok(HttpResponse::Ok()
         .content_type(ContentType::html())
@@ -25,14 +33,17 @@ pub async fn admin_dashboard(
     <title>Admin Dashboard</title>
 </head>
 <body>
+{msg_html}
     <p>Welcome {username}!</p>
     <p>Available Actions</p>
     <ol>
+        <li><a href="/admin/newsletters">Create newsletter</a></li>
         <li><a href="/admin/password">Change password</a></li>
         <li>
             <form name="logoutForm" action="/admin/logout" method="post">
                 <input type="submit" value="Logout">
             </form>
+        </li>
     </ol>
 </body>
 </html>

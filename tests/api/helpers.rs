@@ -83,14 +83,28 @@ impl TestApp {
             .expect("failed to execute request")
     }
 
-    pub async fn post_newsletters(&self, body: serde_json::Value) -> reqwest::Response {
+    pub async fn get_newsletters(&self) -> reqwest::Response {
         self.app_client
-            .post(&format!("{}/newsletters", &self.address))
-            .basic_auth(&self.test_user.username, Some(&self.test_user.password))
-            .json(&body)
+            .get(&format!("{}/admin/newsletters", &self.address))
             .send()
             .await
-            .expect("Faield to execute request")
+            .expect("Failed request")
+    }
+
+    pub async fn get_newsletters_html(&self) -> String {
+        self.get_newsletters().await.text().await.unwrap()
+    }
+
+    pub async fn post_newsletters<Body>(&self, body: &Body) -> reqwest::Response
+    where
+        Body: serde::Serialize,
+    {
+        self.app_client
+            .post(&format!("{}/admin/newsletters", &self.address))
+            .form(&body)
+            .send()
+            .await
+            .expect("Failed to execute request")
     }
 
     pub fn get_confirmation_links(&self, email_request: &wiremock::Request) -> ConfirmationLinks {
@@ -124,6 +138,14 @@ impl TestApp {
             .send()
             .await
             .expect("Failed to execute request.")
+    }
+
+    pub async fn login_test_user(&self) {
+        self.post_login(&serde_json::json!({
+            "username": &self.test_user.username,
+            "password": &self.test_user.password,
+        }))
+        .await;
     }
 
     pub async fn post_logout(&self) -> reqwest::Response {
@@ -218,6 +240,12 @@ pub async fn spawn_app() -> TestApp {
     };
     test_app.test_user.store(&test_app.connection_pool).await;
     test_app
+}
+
+pub async fn spawn_app_logged_in() -> TestApp {
+    let app = spawn_app().await;
+    app.login_test_user().await;
+    app
 }
 
 async fn configure_database(config: &DatabaseSettings) -> PgPool {
