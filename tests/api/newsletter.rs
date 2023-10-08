@@ -5,6 +5,7 @@ use wiremock::{
     matchers::{any, method, path},
     Mock, ResponseTemplate,
 };
+use zero2prod::paths::{self, Path};
 
 #[tokio::test]
 async fn newsletters_are_not_delivered_to_unconfirmed_subscribers() {
@@ -116,4 +117,35 @@ async fn new_newsletter_page_has_form() {
 
     let html = app.get_newsletters_html().await;
     assert!(html.contains("<form"));
+}
+
+#[tokio::test]
+async fn newsletter_create_is_idempotent() {
+    let app = spawn_app_logged_in().await;
+    create_confirmed_subscriber(&app).await;
+
+    Mock::given(any())
+        .respond_with(ResponseTemplate::new(200))
+        .expect(1)
+        .mount(&app.email_server)
+        .await;
+
+    let newsletter_request_body = serde_json::json!({
+        "title": "Newsletter title",
+        "text": "Newsletter plain text content",
+        "html": "<p>Newsletter HTML content.</p>",
+        "idempotency_key": uuid::Uuid::new_v4().to_string(),
+    });
+
+    let response = app.post_newsletters(&newsletter_request_body).await;
+    assert_is_redirect_to_(&response, paths::path_uri(Path::AdminDashboard));
+
+    let html_page = app.get_admin_dashboard_html().await;
+    assert!(html_page.contains("Sent newsletter successfully."));
+
+    let response = app.post_newsletters(&newsletter_request_body).await;
+    assert_is_redirect_to_(&response, paths::path_uri(Path::AdminDashboard));
+
+    let html_page = app.get_admin_dashboard_html().await;
+    assert!(html_page.contains("Sent newsletter successfully."));
 }
