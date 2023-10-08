@@ -1,5 +1,6 @@
 use crate::helpers::{assert_is_redirect_to_, spawn_app};
 use uuid::Uuid;
+use zero2prod::paths::{path_uri, Path};
 
 #[tokio::test]
 async fn you_must_be_logged_in_to_access_the_change_password_form() {
@@ -7,7 +8,7 @@ async fn you_must_be_logged_in_to_access_the_change_password_form() {
 
     let response = app.get_change_password().await;
 
-    assert_is_redirect_to_(&response, "/login");
+    assert_is_redirect_to_(&response, path_uri(Path::Login));
 }
 
 #[tokio::test]

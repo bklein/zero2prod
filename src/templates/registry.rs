@@ -1,5 +1,6 @@
+use crate::paths::get_path;
 use actix_web_flash_messages::{FlashMessage, IncomingFlashMessages};
-use handlebars::Handlebars;
+use handlebars::{handlebars_helper, Handlebars};
 use serde::Serialize;
 use std::path::{Path, PathBuf};
 
@@ -118,6 +119,10 @@ pub fn register_templates<'reg>() -> TemplateRegistry<'reg> {
             &template_root(&["partials", "flash_messages.html"]),
         )
         .expect("Failed to load template");
+    handlebars
+        .register_template_string("blank", "")
+        .expect("Failed to load template");
+    handlebars.register_helper("route", Box::new(route_helper));
     TemplateRegistry(handlebars)
 }
 
@@ -128,6 +133,8 @@ fn template_root<P: AsRef<Path>>(paths: &[P]) -> PathBuf {
     }
     path
 }
+
+handlebars_helper!(route_helper: |r: str| get_path(r));
 
 #[cfg(test)]
 mod test {
@@ -143,7 +150,7 @@ mod test {
         let flash_messages = vec![FlashMessage::info("foobar")];
         let global_context = GlobalContext::from_slice(flash_messages.as_slice());
 
-        let html = engine.render_with_default_layout("password", "test", &global_context);
+        let html = engine.render_with_default_layout("blank", "test", &global_context);
         let html = Html::parse_fragment(&html);
         let p = assert_and_get_element(&html.root_element(), "p");
         let i = assert_and_get_element(&p, "i");
