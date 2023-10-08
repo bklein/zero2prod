@@ -48,6 +48,7 @@ async fn new_password_fields_must_match() {
     assert_is_redirect_to_(&response, "/admin/password");
 
     let html_page = app.get_change_password_html().await;
+    dbg!(&html_page);
     assert!(html_page.contains("<p><i>Password does not match confirmation.</i></p>"));
 }
 

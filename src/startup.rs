@@ -5,6 +5,7 @@ use crate::routes::{
     admin_dashboard, change_password, change_password_form, confirm, get_newsletters_form,
     health_check, home, log_out, login, login_form, publish_newsletter, subscribe,
 };
+use crate::templates::register_templates;
 use actix_session::storage::RedisSessionStore;
 use actix_session::SessionMiddleware;
 use actix_web::dev::Server;
@@ -85,6 +86,7 @@ pub async fn run(
     let message_store = CookieMessageStore::builder(secret_key.clone()).build();
     let message_framework = FlashMessagesFramework::builder(message_store).build();
     let redis_store = RedisSessionStore::new(redis_uri.expose_secret()).await?;
+    let template_registry = Data::new(register_templates());
     let server = HttpServer::new(move || {
         App::new()
             .wrap(message_framework.clone())
@@ -113,6 +115,7 @@ pub async fn run(
             .app_data(email_client.clone())
             .app_data(base_url.clone())
             .app_data(Data::new(HmacSecret(hmac_secret.clone())))
+            .app_data(template_registry.clone())
     })
     .listen(listener)?
     .run();
