@@ -31,7 +31,7 @@ impl<'reg> TemplateRegistry<'reg> {
                 "default_layout",
                 &serde_json::json!({
                     "title":title,
-                    "msgs": global_context.flash_messages(),
+                    "flash_messages": global_context.flash_messages(),
                     "inner_template": name,
                     "data": data,
                 }),
@@ -41,27 +41,35 @@ impl<'reg> TemplateRegistry<'reg> {
 }
 
 #[derive(Default)]
-pub struct GlobalContext(Vec<String>);
+pub struct GlobalContext {
+    flash_messages: FlashMessagePresentation,
+}
 
 impl GlobalContext {
-    pub fn from_slice(flash_messages: &[FlashMessage]) -> Self {
-        Self(
-            flash_messages
-                .iter()
-                .map(|m| m.content().to_owned())
-                .collect::<Vec<String>>(),
-        )
+    pub fn from_slice(flash_messages: &[&FlashMessage]) -> Self {
+        let flash_messages = flash_messages
+            .iter()
+            .map(|m| m.content().to_owned())
+            .collect::<Vec<String>>();
+        let flash_messages = FlashMessagePresentation {
+            all: flash_messages,
+        };
+        Self { flash_messages }
     }
 
     pub fn from_incoming(flash_messages: IncomingFlashMessages) -> Self {
-        let flash_messages: Vec<FlashMessage> =
-            flash_messages.iter().map(|m| m.to_owned()).collect();
+        let flash_messages = flash_messages.iter().collect::<Vec<&FlashMessage>>();
         Self::from_slice(&flash_messages)
     }
 
-    fn flash_messages(&self) -> &[String] {
-        self.0.as_slice()
+    fn flash_messages(&self) -> &FlashMessagePresentation {
+        &self.flash_messages
     }
+}
+
+#[derive(Default, serde::Serialize)]
+pub struct FlashMessagePresentation {
+    pub all: Vec<String>,
 }
 
 pub fn register_templates<'reg>() -> TemplateRegistry<'reg> {
@@ -122,10 +130,15 @@ mod test {
         let engine = register_templates();
 
         let data = serde_json::json!( {
-            "msgs": ["foobar"],
+            "flash_messages": &FlashMessagePresentation{
+                all: vec!["foobar".to_owned()],
+            }
         });
+
         let html = engine.0.render("flash_messages", &data).unwrap();
         let html = Html::parse_fragment(&html);
+        dbg!(&data);
+        dbg!(&html.html());
         let p = assert_and_get_element(&html.root_element(), "p");
         let i = assert_and_get_element(&p, "i");
         assert_eq!(i.inner_html(), "foobar")
