@@ -137,8 +137,6 @@ mod test {
 
         let html = engine.0.render("flash_messages", &data).unwrap();
         let html = Html::parse_fragment(&html);
-        dbg!(&data);
-        dbg!(&html.html());
         let p = assert_and_get_element(&html.root_element(), "p");
         let i = assert_and_get_element(&p, "i");
         assert_eq!(i.inner_html(), "foobar")

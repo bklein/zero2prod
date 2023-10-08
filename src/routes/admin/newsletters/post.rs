@@ -32,7 +32,6 @@ pub async fn publish_newsletter(
     user_id: web::ReqData<UserId>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let user_id = user_id.into_inner();
-    dbg!(&form.0);
     if form.0.title.is_empty() {
         FlashMessage::error("The newsletter must have a title.").send();
         return Ok(see_other("/admin/newsletters"));
