@@ -1,41 +1,15 @@
-use actix_web::{http::header::ContentType, HttpResponse};
+use crate::templates::{render_login_template, GlobalContext, TemplateRegistry};
+use actix_web::{http::header::ContentType, web, HttpResponse};
 use actix_web_flash_messages::IncomingFlashMessages;
-use std::fmt::Write;
 
-pub async fn login_form(flash_messages: IncomingFlashMessages) -> HttpResponse {
-    let mut error_html = String::new();
-    for m in flash_messages.iter() {
-        writeln!(error_html, "<p><i>{}</i></p>", m.content()).unwrap();
-    }
+pub async fn login_form(
+    template_registry: web::Data<TemplateRegistry<'_>>,
+    flash_messages: IncomingFlashMessages,
+) -> HttpResponse {
     HttpResponse::Ok()
         .content_type(ContentType::html())
-        .body(format!(
-            r#"<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta http-equiv="content-type" content="text/html; charset=utf-8">
-    <title>Home</title>
-  </head>
-  <body>
-  {error_html}
-    <form action="/login" method="post">
-      <label>Username
-        <input
-            type="text"
-            placeholder="Enter Username"
-            name="username"
-          >
-      </label>
-        <label>Password
-          <input
-              type="password"
-              placeholder="Enter Password"
-              name="password"
-            >
-        </label>
-        <button type="submit">Login</button>
-    </form>
-  </body>
-</html>"#,
+        .body(render_login_template(
+            &template_registry,
+            &GlobalContext::from_incoming(flash_messages),
         ))
 }

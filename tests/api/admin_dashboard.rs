@@ -1,4 +1,5 @@
 use crate::helpers::{assert_is_redirect_to_, spawn_app, spawn_app_logged_in};
+use zero2prod::paths::{self, Path};
 
 #[tokio::test]
 async fn you_must_be_logged_in_to_access_the_admin_dashboard() {
@@ -14,7 +15,11 @@ async fn dashboard_has_a_link_to_create_newsletter() {
     app.login_test_user().await;
 
     let html = app.get_admin_dashboard_html().await;
-    assert!(html.contains(r#"href="/admin/newsletters""#));
+    dbg!(&html);
+    assert!(html.contains(&format!(
+        r#"href="{}""#,
+        paths::path_uri(Path::AdminNewsletter)
+    )));
 }
 
 #[tokio::test]

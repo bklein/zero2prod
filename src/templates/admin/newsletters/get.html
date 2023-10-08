@@ -1,0 +1,28 @@
+<form action="{{route "admin_newsletter"}}" method="post">
+  <label>Newsletter Title
+    <br />
+    <input
+        type="text"
+        placeholder="Newsletter title"
+        name="title"
+        />
+  </label>
+  <br />
+  <label>Newsletter HTML content
+    <br />
+    <textarea
+        placeholder="Enter newsletter content"
+        name="html"
+        ></textarea>
+  </label>
+  <br />
+  <label>Newsletter text content
+    <br />
+    <textarea
+        placeholder="Enter newsletter content"
+        name="text"
+        ></textarea>
+  </label>
+  <br />
+  <button type="submit">Send newsletter</button>
+</form>

@@ -1,0 +1,11 @@
+<p>Welcome {{data.username}}!</p>
+<p>Available Actions</p>
+<ol>
+  <li><a href="{{route "admin_newsletter"}}">Create newsletter</a></li>
+  <li><a href="{{route "admin_password"}}">Change password</a></li>
+  <li>
+    <form name="logoutForm" action="{{route "admin_logout"}}" method="post">
+      <input type="submit" value="Logout">
+    </form>
+  </li>
+</ol>

@@ -1,0 +1,26 @@
+<form action="{{route "admin_password"}}" method="post">
+  <label>Current password
+    <input
+        type="password"
+        placeholder="Enter current password"
+        name="current_password"
+        />
+  </label>
+  <br />
+  <label>New password
+    <input
+        type="password"
+        placeholder="Enter new password"
+        name="new_password"
+        />
+  </label>
+  <br />
+  <label>Confirm new password
+    <input
+        type="password"
+        placeholder="Confirm new password"
+        name="new_password_confirmation"
+        />
+  </label>
+  <button type="submit">Change password</button>
+</form>
