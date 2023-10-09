@@ -22,6 +22,7 @@ async fn newsletters_are_not_delivered_to_unconfirmed_subscribers() {
         "title": "Newsletter title",
         "text": "Newsletter plain text content",
         "html": "<p>Newsletter HTML content.</p>",
+        "idempotency_key": uuid::Uuid::new_v4().to_string(),
     });
 
     let response = app.post_newsletters(&newsletter_request_body).await;
@@ -46,6 +47,7 @@ async fn newsletters_are_delivered_to_confirmed_subscribers() {
         "title": "Newsletter title",
         "text": "Newsletter plain text content",
         "html": "<p>Newsletter HTML content.</p>",
+        "idempotency_key": uuid::Uuid::new_v4().to_string(),
     });
 
     let response = app.post_newsletters(&newsletter_request_body).await;
@@ -106,6 +108,7 @@ async fn must_be_logged_in_to_create_newsletter() {
         "title": "Newsletter title",
         "text": "Newsletter plain text content",
         "html": "<p>Newsletter HTML content.</p>",
+        "idempotency_key": uuid::Uuid::new_v4().to_string(),
     });
     let response = app.post_newsletters(&body).await;
     assert_is_redirect_to_(&response, "/login");

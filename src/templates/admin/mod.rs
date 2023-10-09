@@ -1,3 +1,5 @@
+use crate::idempotency::IdempotencyKey;
+
 use super::{GlobalContext, TemplateRegistry};
 
 pub fn render_password_template(
@@ -10,8 +12,15 @@ pub fn render_password_template(
 pub fn render_newsletters_template(
     template_registry: &TemplateRegistry,
     global_context: &GlobalContext,
+    idempotency_key: IdempotencyKey,
 ) -> String {
-    template_registry.render_with_default_layout("newsletters", "Create newsletter", global_context)
+    let data = serde_json::json!({"idempotency_key": idempotency_key});
+    template_registry.render_data_with_default_layout(
+        "newsletters",
+        "Create newsletter",
+        global_context,
+        &data,
+    )
 }
 
 pub fn render_admin_dashboard(

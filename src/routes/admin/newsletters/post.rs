@@ -1,7 +1,8 @@
 use crate::authentication::UserId;
 use crate::domain::SubscriberEmail;
 use crate::email_client::EmailClient;
-use crate::utils::{e500, see_other};
+use crate::idempotency::IdempotencyKey;
+use crate::utils::{e400, e500, see_other};
 use actix_web::{web, HttpResponse};
 use actix_web_flash_messages::FlashMessage;
 use anyhow::Context;
@@ -12,6 +13,7 @@ pub struct FormData {
     title: String,
     #[serde(flatten)]
     content: Content,
+    idempotency_key: String,
 }
 
 #[derive(Debug, serde::Deserialize)]
@@ -44,19 +46,19 @@ pub async fn publish_newsletter(
         FlashMessage::error("The newsletter must have HTML content.").send();
         return Ok(see_other("/admin/newsletters"));
     }
-
+    let FormData {
+        title,
+        content: Content { html, text },
+        idempotency_key,
+    } = form.0;
+    let _idempotency_key: IdempotencyKey = idempotency_key.try_into().map_err(e400)?;
     tracing::Span::current().record("user_id", &tracing::field::display(&user_id));
     let subscribers = get_confirmed_subscribers(&pool).await.map_err(e500)?;
     for subscriber in subscribers {
         match subscriber {
             Ok(subscriber) => {
                 email_client
-                    .send_email(
-                        &subscriber.email,
-                        &form.0.title,
-                        &form.0.content.html,
-                        &form.0.content.text,
-                    )
+                    .send_email(&subscriber.email, &title, &html, &text)
                     .await
                     .with_context(|| {
                         format!("Failed to send newsletter issue to {}", subscriber.email)
