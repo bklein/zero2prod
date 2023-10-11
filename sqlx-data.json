@@ -100,23 +100,32 @@
     },
     "query": "INSERT INTO subscriptions_tokens (subscriptions_token, subscriber_id)\n    VALUES ($1, $2)"
   },
-  "7b57e2776a245ba1602f638121550485e2219a6ccaaa62b5ec3e4683e33a3b5f": {
+  "794c0ce1ab5e766961132366163df7a7183ae7985228bf585700250deb38b726": {
     "describe": {
-      "columns": [
-        {
-          "name": "email",
-          "ordinal": 0,
-          "type_info": "Text"
-        }
-      ],
-      "nullable": [
-        false
-      ],
+      "columns": [],
+      "nullable": [],
       "parameters": {
-        "Left": []
+        "Left": [
+          "Uuid",
+          "Text",
+          "Text",
+          "Text"
+        ]
       }
     },
-    "query": "\n        SELECT email\n        FROM subscriptions\n        WHERE status = 'confirmed'\n        "
+    "query": "\n        INSERT INTO newsletter_issues (\n            newsletter_issue_id,\n            title,\n            text_content,\n            html_content,\n            published_at\n        )\n        VALUES ($1, $2, $3, $4, now())\n        "
+  },
+  "972beb09fa657df304f49eeb66a4be2adae5c6c2ff540c9e5b22dc4863dc725d": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      }
+    },
+    "query": "\n        INSERT INTO issue_delievery_queue (\n            newsletter_issue_id,\n            subscriber_email\n        )\n        SELECT $1, email\n        FROM subscriptions\n        WHERE status = 'confirmed'\n        "
   },
   "a45c4529ba120864bdee1ede34be628485753f8df068c080ed65a2d445f00c9c": {
     "describe": {
