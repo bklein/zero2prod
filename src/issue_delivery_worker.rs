@@ -1,10 +1,13 @@
-use crate::{domain::subscriber_email::SubscriberEmail, email_client::EmailClient};
+use crate::{
+    configuration::Settings, domain::subscriber_email::SubscriberEmail, email_client::EmailClient,
+    startup::get_connection_pool,
+};
 use sqlx::{PgPool, Postgres, Transaction};
 use std::time::Duration;
 use tracing::{field::display, Span};
 use uuid::Uuid;
 
-enum ExecutionOutcome {
+pub enum ExecutionOutcome {
     TaskComplete,
     EmptyQueue,
 }
@@ -135,9 +138,9 @@ async fn get_issue(pool: &PgPool, issue_id: Uuid) -> Result<NewsletterIssue, any
     Ok(issue)
 }
 
-async fn worker_loop(pool: &PgPool, email_client: EmailClient) -> Result<(), anyhow::Error> {
+async fn worker_loop(pool: PgPool, email_client: EmailClient) -> Result<(), anyhow::Error> {
     loop {
-        match try_execute_task(pool, &email_client).await {
+        match try_execute_task(&pool, &email_client).await {
             Ok(ExecutionOutcome::EmptyQueue) => {
                 tokio::time::sleep(Duration::from_secs(10)).await;
             }
@@ -147,4 +150,10 @@ async fn worker_loop(pool: &PgPool, email_client: EmailClient) -> Result<(), any
             }
         }
     }
+}
+
+pub async fn run_worker_until_stopped(configuration: Settings) -> Result<(), anyhow::Error> {
+    let connection_pool = get_connection_pool(&configuration.database);
+    let email_client = configuration.email_client.client();
+    worker_loop(connection_pool, email_client).await
 }

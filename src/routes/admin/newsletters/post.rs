@@ -40,6 +40,14 @@ pub async fn publish_newsletter(
         },
         idempotency_key,
     } = form.0;
+
+    if let Err(validation_msgs) = validate_newsletter(&title, &text_content, &html_content) {
+        for m in validation_msgs {
+            m.send();
+        }
+        return Ok(see_other("/admin/newsletters"));
+    }
+
     let idempotency_key: IdempotencyKey = idempotency_key.try_into().map_err(e400)?;
     let mut transaction = match try_processing(&pool, &idempotency_key, *user_id)
         .await
@@ -121,4 +129,31 @@ async fn enqueue_delivery_tasks(
     .execute(transaction)
     .await?;
     Ok(())
+}
+
+fn validate_newsletter(
+    title: &str,
+    text_content: &str,
+    html_content: &str,
+) -> Result<(), Vec<FlashMessage>> {
+    let mut validation_msgs = vec![];
+    if title.is_empty() {
+        validation_msgs.push(FlashMessage::error("The newsletter must have a title."));
+    }
+    if text_content.is_empty() {
+        validation_msgs.push(FlashMessage::error(
+            "The newsletter must have text content.",
+        ));
+    }
+    if html_content.is_empty() {
+        validation_msgs.push(FlashMessage::error(
+            "The newsletter must have HTML content.",
+        ));
+    }
+
+    if validation_msgs.is_empty() {
+        Ok(())
+    } else {
+        Err(validation_msgs)
+    }
 }

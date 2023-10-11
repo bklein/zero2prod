@@ -8,7 +8,7 @@ use fake::{
 use std::time::Duration;
 use wiremock::{
     matchers::{any, method, path},
-    Mock, MockBuilder, ResponseTemplate,
+    Mock, ResponseTemplate,
 };
 use zero2prod::paths::{self, Path};
 
@@ -34,7 +34,9 @@ async fn newsletters_are_not_delivered_to_unconfirmed_subscribers() {
     assert_is_redirect_to_(&response, "/admin/dashboard");
 
     let html_page = app.get_admin_dashboard_html().await;
-    assert!(html_page.contains("Sent newsletter successfully."));
+    assert!(html_page.contains("The newsletter has been accepted."));
+
+    app.dispatch_all_pending_emails().await;
 }
 
 #[tokio::test]
@@ -59,7 +61,9 @@ async fn newsletters_are_delivered_to_confirmed_subscribers() {
     assert_is_redirect_to_(&response, "/admin/dashboard");
 
     let html_page = app.get_admin_dashboard_html().await;
-    assert!(html_page.contains("Sent newsletter successfully."));
+    assert!(html_page.contains("The newsletter has been accepted."));
+
+    app.dispatch_all_pending_emails().await;
 }
 
 async fn create_unconfirmed_subscriber(app: &TestApp) -> ConfirmationLinks {
@@ -155,13 +159,15 @@ async fn newsletter_create_is_idempotent() {
     assert_is_redirect_to_(&response, paths::path_uri(Path::AdminDashboard));
 
     let html_page = app.get_admin_dashboard_html().await;
-    assert!(html_page.contains("Sent newsletter successfully."));
+    assert!(html_page.contains("The newsletter has been accepted."));
 
     let response = app.post_newsletters(&newsletter_request_body).await;
     assert_is_redirect_to_(&response, paths::path_uri(Path::AdminDashboard));
 
     let html_page = app.get_admin_dashboard_html().await;
-    assert!(html_page.contains("Sent newsletter successfully."));
+    assert!(html_page.contains("The newsletter has been accepted."));
+
+    app.dispatch_all_pending_emails().await;
 }
 
 #[tokio::test]
@@ -191,54 +197,6 @@ async fn concurrent_form_submission_is_handled_gracefully() {
         response1.text().await.unwrap(),
         response2.text().await.unwrap()
     );
-}
 
-fn when_sending_an_email() -> MockBuilder {
-    Mock::given(path("/email")).and(method("POST"))
-}
-
-#[tokio::test]
-async fn transient_errors_do_not_cause_duplicate_deliveries_on_retries() {
-    let app = spawn_app_logged_in().await;
-    create_confirmed_subscriber(&app).await;
-    create_confirmed_subscriber(&app).await;
-
-    Mock::given(any())
-        .respond_with(ResponseTemplate::new(200))
-        .expect(1)
-        .mount(&app.email_server)
-        .await;
-
-    let newsletter_request_body = serde_json::json!({
-        "title": "Newsletter title",
-        "text": "Newsletter plain text content",
-        "html": "<p>Newsletter HTML content.</p>",
-        "idempotency_key": uuid::Uuid::new_v4().to_string(),
-    });
-
-    when_sending_an_email()
-        .respond_with(ResponseTemplate::new(200))
-        .up_to_n_times(1)
-        .expect(1)
-        .mount(&app.email_server)
-        .await;
-    when_sending_an_email()
-        .respond_with(ResponseTemplate::new(500))
-        .up_to_n_times(1)
-        .expect(1)
-        .mount(&app.email_server)
-        .await;
-
-    let response = app.post_newsletters(&newsletter_request_body).await;
-    assert_eq!(response.status().as_u16(), 500);
-
-    when_sending_an_email()
-        .respond_with(ResponseTemplate::new(200))
-        .expect(1)
-        .named("Delivery retry")
-        .mount(&app.email_server)
-        .await;
-
-    let response = app.post_newsletters(&newsletter_request_body).await;
-    assert_eq!(response.status().as_u16(), 303);
+    app.dispatch_all_pending_emails().await;
 }
