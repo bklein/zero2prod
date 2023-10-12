@@ -1,4 +1,5 @@
 use crate::authentication::UserId;
+use crate::domain::newsletter_issue::NewsletterIssue;
 use crate::idempotency::{save_response, try_processing, IdempotencyKey, NextAction};
 use crate::utils::{e400, e500, see_other};
 use actix_web::{web, HttpResponse};
@@ -41,12 +42,15 @@ pub async fn publish_newsletter(
         idempotency_key,
     } = form.0;
 
-    if let Err(validation_msgs) = validate_newsletter(&title, &text_content, &html_content) {
-        for m in validation_msgs {
-            m.send();
+    let newsletter_issue = match NewsletterIssue::validate_new(title, text_content, html_content) {
+        Ok(newsletter_issue) => newsletter_issue,
+        Err(validation_msgs) => {
+            for m in validation_msgs {
+                FlashMessage::error(m).send();
+            }
+            return Ok(see_other("/admin/newsletters"));
         }
-        return Ok(see_other("/admin/newsletters"));
-    }
+    };
 
     let idempotency_key: IdempotencyKey = idempotency_key.try_into().map_err(e400)?;
     let mut transaction = match try_processing(&pool, &idempotency_key, *user_id)
@@ -59,11 +63,10 @@ pub async fn publish_newsletter(
             return Ok(saved_response);
         }
     };
-    let newsletter_issue_id =
-        insert_newsletter_issue(&mut transaction, &title, &text_content, &html_content)
-            .await
-            .context("Failed to store newsletter details")
-            .map_err(e500)?;
+    let newsletter_issue_id = insert_newsletter_issue(&mut transaction, &newsletter_issue)
+        .await
+        .context("Failed to store newsletter details")
+        .map_err(e500)?;
     enqueue_delivery_tasks(&mut transaction, newsletter_issue_id)
         .await
         .context("Failed to enqueue delivery tasks")
@@ -83,9 +86,7 @@ fn success_message() -> FlashMessage {
 #[tracing::instrument(skip_all)]
 async fn insert_newsletter_issue(
     transaction: &mut Transaction<'_, Postgres>,
-    title: &str,
-    text_content: &str,
-    html_content: &str,
+    newsletter_issue: &NewsletterIssue,
 ) -> Result<Uuid, sqlx::Error> {
     let newsletter_issue_id = Uuid::new_v4();
     sqlx::query!(
@@ -100,9 +101,9 @@ async fn insert_newsletter_issue(
         VALUES ($1, $2, $3, $4, now())
         "#,
         newsletter_issue_id,
-        title,
-        text_content,
-        html_content
+        newsletter_issue.title(),
+        newsletter_issue.text(),
+        newsletter_issue.html()
     )
     .execute(transaction)
     .await?;
@@ -129,31 +130,4 @@ async fn enqueue_delivery_tasks(
     .execute(transaction)
     .await?;
     Ok(())
-}
-
-fn validate_newsletter(
-    title: &str,
-    text_content: &str,
-    html_content: &str,
-) -> Result<(), Vec<FlashMessage>> {
-    let mut validation_msgs = vec![];
-    if title.is_empty() {
-        validation_msgs.push(FlashMessage::error("The newsletter must have a title."));
-    }
-    if text_content.is_empty() {
-        validation_msgs.push(FlashMessage::error(
-            "The newsletter must have text content.",
-        ));
-    }
-    if html_content.is_empty() {
-        validation_msgs.push(FlashMessage::error(
-            "The newsletter must have HTML content.",
-        ));
-    }
-
-    if validation_msgs.is_empty() {
-        Ok(())
-    } else {
-        Err(validation_msgs)
-    }
 }

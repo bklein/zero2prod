@@ -1,4 +1,4 @@
-use crate::domain::SubscriberEmail;
+use crate::domain::{NewsletterIssue, SubscriberEmail};
 use reqwest::Client;
 use secrecy::{ExposeSecret, Secret};
 
@@ -28,17 +28,15 @@ impl EmailClient {
     pub async fn send_email(
         &self,
         recipient: &SubscriberEmail,
-        subject: &str,
-        html_content: &str,
-        text_content: &str,
+        newsletter_issue: &NewsletterIssue,
     ) -> Result<(), reqwest::Error> {
         let url = format!("{}/email", self.base_url);
         let request_body = SendEmailRequest {
             from: self.sender.as_ref(),
             to: recipient.as_ref(),
-            subject,
-            html_body: html_content,
-            text_body: text_content,
+            subject: newsletter_issue.title(),
+            html_body: newsletter_issue.html(),
+            text_body: newsletter_issue.text(),
         };
         self.http_client
             .post(&url)
@@ -66,7 +64,7 @@ struct SendEmailRequest<'a> {
 
 #[cfg(test)]
 mod tests {
-    use crate::domain::SubscriberEmail;
+    use crate::domain::{NewsletterIssue, SubscriberEmail};
     use crate::email_client::EmailClient;
     use claims::{assert_err, assert_ok};
     use fake::faker::internet::en::SafeEmail;
@@ -75,6 +73,10 @@ mod tests {
     use secrecy::Secret;
     use wiremock::matchers::{any, header, header_exists, method, path};
     use wiremock::{Mock, MockServer, Request, ResponseTemplate};
+
+    fn newsletter_issue() -> NewsletterIssue {
+        NewsletterIssue::validate_new(subject(), content(), content()).expect("invalid newsletter")
+    }
 
     fn subject() -> String {
         Sentence(1..2).fake()
@@ -127,9 +129,7 @@ mod tests {
             .mount(&mock_server)
             .await;
 
-        let _ = email_client
-            .send_email(&email(), &subject(), &content(), &content())
-            .await;
+        let _ = email_client.send_email(&email(), &newsletter_issue()).await;
     }
 
     #[tokio::test]
@@ -142,9 +142,7 @@ mod tests {
             .mount(&mock_server)
             .await;
 
-        let outcome = email_client
-            .send_email(&email(), &subject(), &content(), &content())
-            .await;
+        let outcome = email_client.send_email(&email(), &newsletter_issue()).await;
 
         assert_ok!(outcome);
     }
@@ -159,9 +157,7 @@ mod tests {
             .mount(&mock_server)
             .await;
 
-        let outcome = email_client
-            .send_email(&email(), &subject(), &content(), &content())
-            .await;
+        let outcome = email_client.send_email(&email(), &newsletter_issue()).await;
 
         assert_err!(outcome);
     }
@@ -177,9 +173,7 @@ mod tests {
             .mount(&mock_server)
             .await;
 
-        let outcome = email_client
-            .send_email(&email(), &subject(), &content(), &content())
-            .await;
+        let outcome = email_client.send_email(&email(), &newsletter_issue()).await;
 
         assert_err!(outcome);
     }
