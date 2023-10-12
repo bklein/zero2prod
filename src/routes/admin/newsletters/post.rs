@@ -45,8 +45,8 @@ pub async fn publish_newsletter(
     let newsletter_issue = match NewsletterIssue::validate_new(title, text_content, html_content) {
         Ok(newsletter_issue) => newsletter_issue,
         Err(validation_msgs) => {
-            for m in validation_msgs {
-                FlashMessage::error(m).send();
+            for m in validation_msgs.iter() {
+                FlashMessage::error(m.to_owned()).send();
             }
             return Ok(see_other("/admin/newsletters"));
         }

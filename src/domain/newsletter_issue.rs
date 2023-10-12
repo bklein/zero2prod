@@ -1,3 +1,5 @@
+use std::error::Error;
+
 #[derive(Debug)]
 pub struct NewsletterIssue {
     title: String,
@@ -5,12 +7,29 @@ pub struct NewsletterIssue {
     html_content: String,
 }
 
+#[derive(Debug)]
+pub struct NewsletterValidationError(Vec<&'static str>);
+
+impl NewsletterValidationError {
+    pub fn iter(&self) -> impl Iterator<Item = &&str> {
+        self.0.iter()
+    }
+}
+
+impl Error for NewsletterValidationError {}
+
+impl std::fmt::Display for NewsletterValidationError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
 impl NewsletterIssue {
     pub fn validate_new(
         title: String,
         text_content: String,
         html_content: String,
-    ) -> Result<Self, Vec<&'static str>> {
+    ) -> Result<Self, NewsletterValidationError> {
         let mut validation_msgs = vec![];
         if title.is_empty() {
             validation_msgs.push("The newsletter must have a title.");
@@ -29,7 +48,7 @@ impl NewsletterIssue {
                 html_content,
             })
         } else {
-            Err(validation_msgs)
+            Err(NewsletterValidationError(validation_msgs))
         }
     }
 
