@@ -18,7 +18,7 @@ async fn dashboard_has_a_link_to_create_newsletter() {
     dbg!(&html);
     assert!(html.contains(&format!(
         r#"href="{}""#,
-        paths::path_uri(Path::AdminNewsletter)
+        paths::path_uri(Path::AdminNewsletters)
     )));
 }
 
@@ -30,6 +30,7 @@ async fn new_newsletter_must_have_title() {
         "title": "",
         "text": "Newsletter plain text body.",
         "html": "<p>Newsletter html body.",
+        "idempotency_key": uuid::Uuid::new_v4().to_string(),
     });
     let response = app.post_newsletters(&invalid_body).await;
     assert_is_redirect_to_(&response, "/admin/newsletters");
@@ -46,6 +47,7 @@ async fn new_newsletter_must_have_text_content() {
         "title": "Newsletter title",
         "text": "",
         "html": "<p>Newsletter html body.",
+        "idempotency_key": uuid::Uuid::new_v4().to_string(),
     });
     let response = app.post_newsletters(&invalid_body).await;
     assert_is_redirect_to_(&response, "/admin/newsletters");
@@ -62,6 +64,7 @@ async fn new_newsletter_must_have_html_content() {
         "title": "Newsletter title",
         "text": "Newsletter plain text body.",
         "html": "",
+        "idempotency_key": uuid::Uuid::new_v4().to_string(),
     });
     let response = app.post_newsletters(&invalid_body).await;
     assert_is_redirect_to_(&response, "/admin/newsletters");

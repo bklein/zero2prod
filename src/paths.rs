@@ -1,6 +1,6 @@
 pub enum Path {
     AdminDashboard,
-    AdminNewsletter,
+    AdminNewsletters,
     AdminPassword,
     AdminLogout,
     Login,
@@ -12,7 +12,7 @@ impl TryFrom<&str> for Path {
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         match value {
             "admin_dashboard" => Ok(Path::AdminDashboard),
-            "admin_newsletter" => Ok(Path::AdminNewsletter),
+            "admin_newsletter" => Ok(Path::AdminNewsletters),
             "admin_password" => Ok(Path::AdminPassword),
             "admin_logout" => Ok(Path::AdminLogout),
             "login" => Ok(Path::Login),
@@ -24,7 +24,7 @@ impl TryFrom<&str> for Path {
 pub fn path_uri(path: Path) -> &'static str {
     match path {
         Path::AdminDashboard => "/admin/dashboard",
-        Path::AdminNewsletter => "/admin/newsletters",
+        Path::AdminNewsletters => "/admin/newsletters",
         Path::AdminPassword => "/admin/password",
         Path::AdminLogout => "/admin/logout",
         Path::Login => "/login",
