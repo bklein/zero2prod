@@ -1,8 +1,11 @@
 use crate::{
-    configuration::Settings, domain::subscriber_email::SubscriberEmail, email_client::EmailClient,
+    configuration::Settings,
+    domain::{subscriber_email::SubscriberEmail, NewsletterIssue},
+    email_client::EmailClient,
     startup::get_connection_pool,
 };
 use sqlx::{PgPool, Postgres, Transaction};
+use std::fmt::Debug;
 use std::time::Duration;
 use tracing::{field::display, Span};
 use uuid::Uuid;
@@ -35,15 +38,7 @@ pub async fn try_execute_task(
     match SubscriberEmail::parse(email.clone()) {
         Ok(email) => {
             let issue = get_issue(pool, issue_id).await?;
-            if let Err(e) = email_client
-                .send_email(
-                    &email,
-                    &issue.title,
-                    &issue.html_content,
-                    &issue.text_content,
-                )
-                .await
-            {
+            if let Err(e) = email_client.send_email(&email, &issue).await {
                 tracing::error!(
                     error.cause_chain = ?e,
                     error.message = %e,
@@ -115,7 +110,8 @@ async fn delete_task(
     Ok(())
 }
 
-struct NewsletterIssue {
+#[derive(Debug)]
+struct RawNewsletterIssue {
     title: String,
     text_content: String,
     html_content: String,
@@ -124,7 +120,7 @@ struct NewsletterIssue {
 #[tracing::instrument(skip_all)]
 async fn get_issue(pool: &PgPool, issue_id: Uuid) -> Result<NewsletterIssue, anyhow::Error> {
     let issue = sqlx::query_as!(
-        NewsletterIssue,
+        RawNewsletterIssue,
         r#"
         SELECT title, text_content, html_content
         FROM newsletter_issues
@@ -135,7 +131,10 @@ async fn get_issue(pool: &PgPool, issue_id: Uuid) -> Result<NewsletterIssue, any
     )
     .fetch_one(pool)
     .await?;
-    Ok(issue)
+    Ok(
+        NewsletterIssue::validate_new(issue.title, issue.text_content, issue.html_content)
+            .expect("invalid newsletter stored in database"),
+    )
 }
 
 async fn worker_loop(pool: PgPool, email_client: EmailClient) -> Result<(), anyhow::Error> {

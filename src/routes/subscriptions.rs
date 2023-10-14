@@ -1,3 +1,4 @@
+use crate::domain::newsletter_issue::NewsletterIssue;
 use crate::domain::{NewSubscriber, SubscriberEmail, SubscriberName};
 use crate::email_client::EmailClient;
 use crate::startup::ApplicationBaseUrl;
@@ -124,18 +125,21 @@ async fn send_confirmation_email(
         "{}/subscriptions/confirm?subscription_token={}",
         base_url, confirmation_token
     );
-    let plain_body = &format!(
+    let plain_body = format!(
         "Welcome to our newsletter!\n\
                 Visit {} to confirm your subscription.",
         confirmation_link
     );
-    let html_body = &format!(
+    let html_body = format!(
         "Welcome to our newsletter!<br />\
                 Click <a href=\"{}\">here</a> to confirm your subscription.",
         confirmation_link
     );
+    let newsletter_issue =
+        NewsletterIssue::validate_new("Welcome!".to_owned(), plain_body, html_body)
+            .expect("invalid newsletter");
     email_client
-        .send_email(&new_subscriber.email, "Welcome!", html_body, plain_body)
+        .send_email(&new_subscriber.email, &newsletter_issue)
         .await
 }
 
