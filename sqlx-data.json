@@ -1,5 +1,43 @@
 {
   "db": "PostgreSQL",
+  "0fd72d3701d5d6606644f99e4bddbdced3132269230b0a11bbdb5cf826d2e260": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "email",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "name",
+          "ordinal": 2,
+          "type_info": "Text"
+        },
+        {
+          "name": "subscriptions_token",
+          "ordinal": 3,
+          "type_info": "Text"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      }
+    },
+    "query": "\n        SELECT id, email, name, subscriptions_token\n        FROM subscriptions\n        JOIN subscriptions_tokens\n        ON subscriber_id = subscriptions.id\n        WHERE\n            id = $1\n        LIMIT 1\n        "
+  },
   "1cfcdafe90abbcc6b315644e7b4ffedaea3f5e584388e99f747861530b7d8e6a": {
     "describe": {
       "columns": [
@@ -49,6 +87,18 @@
       }
     },
     "query": "\n        DELETE FROM issue_delievery_queue\n        WHERE\n            newsletter_issue_id = $1 AND\n            subscriber_email = $2\n        "
+  },
+  "2b2f42fd6647a909b3cd0ccf485909997a3414d15fb044346532e42a1bfd6631": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      }
+    },
+    "query": "\n        INSERT INTO subscription_confirmation_delivery_queue (subscriber_id)\n        VALUES ($1)\n        "
   },
   "2e3de6dde8a56503a95a1f7d45414d7b685c351f45eb54a224960273219ebc5a": {
     "describe": {
@@ -184,6 +234,18 @@
     },
     "query": "\n        INSERT INTO newsletter_issues (\n            newsletter_issue_id,\n            title,\n            text_content,\n            html_content,\n            published_at\n        )\n        VALUES ($1, $2, $3, $4, now())\n        "
   },
+  "7a6d7594aac8c332434f3ac296371919d65681e8c9a55592a3651b73aa74b817": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      }
+    },
+    "query": "\n        DELETE FROM subscription_confirmation_delivery_queue\n        WHERE\n            subscriber_id = $1\n        "
+  },
   "972beb09fa657df304f49eeb66a4be2adae5c6c2ff540c9e5b22dc4863dc725d": {
     "describe": {
       "columns": [],
@@ -215,6 +277,24 @@
       }
     },
     "query": "\n        SELECT username\n        FROM users\n        where user_id = $1\n        "
+  },
+  "a8d4dcfc0f606d7d154d8853ffd48fdfaf477fdb31d185a9b736bd9d4c973d2d": {
+    "describe": {
+      "columns": [
+        {
+          "name": "subscriber_id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Left": []
+      }
+    },
+    "query": "\n        SELECT subscriber_id\n        FROM subscription_confirmation_delivery_queue\n        FOR UPDATE\n        SKIP LOCKED\n        LIMIT 1\n        "
   },
   "c56343c44ce3d2353a288ad88ceebe00d1067f6f90290239ec1e5bc082ee73db": {
     "describe": {

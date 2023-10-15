@@ -15,7 +15,6 @@ async fn dashboard_has_a_link_to_create_newsletter() {
     app.login_test_user().await;
 
     let html = app.get_admin_dashboard_html().await;
-    dbg!(&html);
     assert!(html.contains(&format!(
         r#"href="{}""#,
         paths::path_uri(Path::AdminNewsletters)

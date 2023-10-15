@@ -62,6 +62,7 @@ pub fn get_connection_pool(configuration: &DatabaseSettings) -> PgPool {
         .connect_lazy_with(configuration.with_db())
 }
 
+#[derive(Debug)]
 pub struct ApplicationBaseUrl(pub String);
 
 pub async fn run(

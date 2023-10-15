@@ -1,9 +1,9 @@
 use std::fmt::{Debug, Display};
 use tokio::task::JoinError;
 use zero2prod::configuration::get_configuration;
-use zero2prod::issue_delivery_worker::run_worker_until_stopped;
 use zero2prod::startup::Application;
 use zero2prod::telemetry::{get_subscriber, init_subscriber};
+use zero2prod::{issue_delivery_worker, subscription_confirmation_delivery_worker};
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
@@ -12,12 +12,17 @@ async fn main() -> Result<(), anyhow::Error> {
     let configuration = get_configuration().expect("Could not get config.");
     let application = Application::build(configuration.clone()).await?;
     let application_task = tokio::spawn(application.run_until_stopped());
-    let worker = run_worker_until_stopped(configuration);
-    let worker_task = tokio::spawn(worker);
+    let issue_delivery_worker_task = tokio::spawn(issue_delivery_worker::run_worker_until_stopped(
+        configuration.clone(),
+    ));
+    let confirmation_delivery_worker_task = tokio::spawn(
+        subscription_confirmation_delivery_worker::run_worker_until_stopped(configuration.clone()),
+    );
 
     tokio::select! {
         o = application_task => report_exit("API", o),
-        o = worker_task => report_exit("Background worker", o),
+        o = issue_delivery_worker_task => report_exit("Newsletter delivery worker", o),
+        o = confirmation_delivery_worker_task => report_exit("Confirmation delivery worker", o),
     }
 
     Ok(())
