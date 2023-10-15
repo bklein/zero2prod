@@ -31,7 +31,7 @@ pub async fn delete_subscription_confirmation_task(
     mut transaction: PgTransaction<'_>,
     user: Uuid,
 ) -> Result<(), anyhow::Error> {
-    let affected = sqlx::query!(
+    sqlx::query!(
         r#"
         DELETE FROM subscription_confirmation_delivery_queue
         WHERE
@@ -40,11 +40,8 @@ pub async fn delete_subscription_confirmation_task(
         user,
     )
     .execute(&mut transaction)
-    .await?
-    .rows_affected();
+    .await?;
     transaction.commit().await?;
-    dbg!(&user);
-    dbg!(affected);
     Ok(())
 }
 

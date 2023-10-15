@@ -5,8 +5,7 @@ use zero2prod::telemetry::{get_subscriber, init_subscriber};
 
 #[tracing::instrument(skip_all)]
 async fn ret_200(req: HttpRequest, data: web::Json<Option<SendEmailRequest>>) -> HttpResponse {
-    dbg!(req);
-    dbg!(data);
+    tracing::info!("Received request: {:?} data: {:?}", req, data);
     HttpResponse::Ok().finish()
 }
 

@@ -24,7 +24,6 @@ pub async fn try_execute_task(
 ) -> Result<ExecutionOutcome, anyhow::Error> {
     match dequeue_subscription_confirmation_task_and_parse(pool).await? {
         Some((transaction, task)) => {
-            dbg!(&task);
             send_confirmation_email(
                 email_client,
                 task.subscriber,
@@ -193,14 +192,12 @@ mod test {
             .expect("db problem");
         assert!(task.is_some());
         let (transaction, task) = task.unwrap();
-        dbg!(&task);
         let r = delete_subscription_confirmation_task(transaction, task.subscriber_id).await;
         assert!(r.is_ok());
 
         let task = dequeue_subscription_confirmation_task_and_parse(&pool)
             .await
             .expect("db problem");
-        dbg!(&task);
         assert!(task.is_none());
     }
 }
