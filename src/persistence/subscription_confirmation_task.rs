@@ -68,22 +68,22 @@ pub async fn dequeue_subscription_confirmation_task_and_parse(
                 "Skipping a confirmed subscriber because their name was not validated",
             );
         }
-        if name.is_ok() && email.is_ok() {
-            let new_subscriber = NewSubscriber {
-                email: email.unwrap(),
-                name: name.unwrap(),
-            };
-            Ok(Some((
-                transaction,
-                SubscriptionConfirmationTask {
-                    subscriber_id: raw_task.user,
-                    subscriber: new_subscriber,
-                    confirmation_token: raw_task.token,
-                },
-            )))
-        } else {
-            delete_subscription_confirmation_task(transaction, raw_task.user).await?;
-            Ok(None)
+        match (name, email) {
+            (Ok(name), Ok(email)) => {
+                let new_subscriber = NewSubscriber { email, name };
+                Ok(Some((
+                    transaction,
+                    SubscriptionConfirmationTask {
+                        subscriber_id: raw_task.user,
+                        subscriber: new_subscriber,
+                        confirmation_token: raw_task.token,
+                    },
+                )))
+            }
+            _ => {
+                delete_subscription_confirmation_task(transaction, raw_task.user).await?;
+                Ok(None)
+            }
         }
     } else {
         Ok(None)
