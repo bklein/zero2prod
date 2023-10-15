@@ -208,6 +208,18 @@ impl TestApp {
             .expect("Failed to execute request")
     }
 
+    pub async fn get_home(&self) -> reqwest::Response {
+        self.app_client
+            .get(&format!("{}/", &self.address))
+            .send()
+            .await
+            .expect("Failed request")
+    }
+
+    pub async fn get_home_html(&self) -> String {
+        self.get_home().await.text().await.unwrap()
+    }
+
     pub async fn dispatch_all_pending_emails(&self) {
         loop {
             if let issue_delivery_worker::ExecutionOutcome::EmptyQueue =

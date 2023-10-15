@@ -93,6 +93,9 @@ pub fn register_templates<'reg>() -> TemplateRegistry<'reg> {
         )
         .expect("Failed to load template");
     handlebars
+        .register_template_file("home", &template_root(&["home", "home.html"]))
+        .expect("Failed to load template");
+    handlebars
         .register_template_file(
             "admin_dashboard",
             &template_root(&["admin", "dashboard", "get.html"]),

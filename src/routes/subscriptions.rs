@@ -5,6 +5,8 @@ use actix_web::http::StatusCode;
 use actix_web::ResponseError;
 use actix_web::{web, HttpResponse};
 
+use actix_web_flash_messages::FlashMessage;
+use reqwest::header::LOCATION;
 use sqlx::PgPool;
 
 #[derive(serde::Deserialize)]
@@ -37,7 +39,10 @@ pub async fn subscribe(
 ) -> Result<HttpResponse, SubscribeError> {
     let new_subscriber = form.0.try_into().map_err(SubscribeError::ValidationError)?;
     complete_new_subscriber_workflow(&pool, new_subscriber).await?;
-    Ok(HttpResponse::Ok().finish())
+    FlashMessage::info("Successfully created subscription.").send();
+    Ok(HttpResponse::SeeOther()
+        .insert_header((LOCATION, "/"))
+        .finish())
 }
 
 #[derive(thiserror::Error)]

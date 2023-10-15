@@ -1,9 +1,9 @@
-use crate::helpers::spawn_app;
+use crate::helpers::{assert_is_redirect_to_, spawn_app};
 use wiremock::matchers::{method, path};
 use wiremock::{Mock, ResponseTemplate};
 
 #[tokio::test]
-async fn subscribe_returns_a_200_for_valid_form_data() {
+async fn subscribe_redirects_to_home_for_valid_form_data() {
     let app = spawn_app().await;
     let body = "name=le%20guin&email=ursula_le_guin%40gmail.com";
 
@@ -14,7 +14,10 @@ async fn subscribe_returns_a_200_for_valid_form_data() {
         .await;
 
     let response = app.post_subscriptions(body.into()).await;
-    assert_eq!(200, response.status().as_u16());
+    assert_is_redirect_to_(&response, "/");
+
+    let html = app.get_home_html().await;
+    assert!(html.contains("Successfully created subscription"));
 }
 
 #[tokio::test]
@@ -95,7 +98,7 @@ async fn subscribe_sends_a_confirmation_email_for_valid_data() {
         .await;
 
     let response = app.post_subscriptions(body.into()).await;
-    assert_eq!(200, response.status().as_u16());
+    assert_is_redirect_to_(&response, "/");
 
     app.dispatch_all_pending_emails().await;
 }
