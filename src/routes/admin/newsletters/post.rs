@@ -7,8 +7,7 @@ use crate::utils::{e400, e500, see_other};
 use actix_web::{web, HttpResponse};
 use actix_web_flash_messages::FlashMessage;
 use anyhow::Context;
-use sqlx::{PgPool};
-
+use sqlx::PgPool;
 
 #[derive(Debug, serde::Deserialize)]
 pub struct FormData {

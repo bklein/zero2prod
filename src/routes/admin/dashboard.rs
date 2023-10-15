@@ -7,7 +7,6 @@ use actix_web_flash_messages::IncomingFlashMessages;
 
 use sqlx::PgPool;
 
-
 pub async fn admin_dashboard(
     session: TypedSession,
     flash_messages: IncomingFlashMessages,

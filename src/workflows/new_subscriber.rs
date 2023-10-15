@@ -3,8 +3,7 @@ use crate::{
     persistence::{insert_subscriber, insert_subscription_confirmation_task, store_token},
 };
 use anyhow::Context;
-use sqlx::{PgPool};
-
+use sqlx::PgPool;
 
 pub async fn complete_new_subscriber_workflow(
     pool: &PgPool,

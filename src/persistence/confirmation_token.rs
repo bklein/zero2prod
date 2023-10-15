@@ -1,8 +1,5 @@
-
 use sqlx::{Postgres, Transaction};
 use uuid::Uuid;
-
-
 
 #[derive(Debug)]
 pub struct StoreTokenError(sqlx::Error);

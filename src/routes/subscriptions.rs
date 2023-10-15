@@ -1,4 +1,3 @@
-
 use crate::domain::{NewSubscriber, SubscriberEmail, SubscriberName};
 
 use crate::workflows::complete_new_subscriber_workflow;
@@ -6,8 +5,7 @@ use actix_web::http::StatusCode;
 use actix_web::ResponseError;
 use actix_web::{web, HttpResponse};
 
-use sqlx::{PgPool};
-
+use sqlx::PgPool;
 
 #[derive(serde::Deserialize)]
 pub struct FormData {

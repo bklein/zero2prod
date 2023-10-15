@@ -5,7 +5,6 @@ use actix_web::{web, HttpResponse};
 use anyhow::Context;
 use sqlx::PgPool;
 
-
 #[derive(serde::Deserialize)]
 pub struct Parameters {
     subscription_token: String,

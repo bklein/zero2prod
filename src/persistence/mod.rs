@@ -1,7 +1,4 @@
-
-
 use sqlx::{Postgres, Transaction};
-
 
 type PgTransaction<'a> = Transaction<'a, Postgres>;
 

@@ -1,9 +1,6 @@
-use crate::{
-    domain::{NewsletterIssue},
-};
+use crate::domain::NewsletterIssue;
 use sqlx::{PgPool, Postgres, Transaction};
 use std::fmt::Debug;
-
 
 use uuid::Uuid;
 
