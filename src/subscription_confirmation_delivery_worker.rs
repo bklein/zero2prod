@@ -8,10 +8,8 @@ use crate::{
     startup::{get_connection_pool, ApplicationBaseUrl},
 };
 use anyhow::Context;
-use sqlx::{PgPool};
+use sqlx::PgPool;
 use std::time::Duration;
-
-
 
 pub enum ExecutionOutcome {
     TaskComplete,
@@ -101,6 +99,7 @@ async fn send_confirmation_email(
 #[cfg(test)]
 mod test {
     use sqlx::{Connection, Executor, PgConnection};
+    use uuid::Uuid;
     use wiremock::{
         matchers::{method, path},
         MockServer,
@@ -109,7 +108,7 @@ mod test {
 
     use crate::{
         configuration::{DatabaseSettings, Environment},
-        domain::new_subscriber,
+        domain::{SubscriberEmail, SubscriberName},
         workflows::complete_new_subscriber_workflow,
     };
 
