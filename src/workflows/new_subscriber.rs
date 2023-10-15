@@ -22,7 +22,7 @@ pub async fn complete_new_subscriber_workflow(
         .commit()
         .await
         .context("Failed to commit db transaction.")?;
-    insert_subscription_confirmation_task(subscriber_id, &pool)
+    insert_subscription_confirmation_task(subscriber_id, pool)
         .await
         .context("Failed to enqueue subscriber confirmation task")?;
     Ok(())

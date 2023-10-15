@@ -47,7 +47,7 @@ async fn worker_loop(
     base_url: &ApplicationBaseUrl,
 ) -> Result<(), anyhow::Error> {
     loop {
-        match try_execute_task(&pool, &email_client, &base_url).await {
+        match try_execute_task(&pool, &email_client, base_url).await {
             Ok(ExecutionOutcome::EmptyQueue) => {
                 tokio::time::sleep(Duration::from_secs(10)).await;
             }
