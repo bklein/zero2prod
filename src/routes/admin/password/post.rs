@@ -1,6 +1,6 @@
 use crate::{
     authentication::{validate_credentials, AuthError, Credentials, UserId},
-    routes::get_username,
+    persistence::get_username,
     utils::{e500, see_other},
 };
 use actix_web::{web, HttpResponse};

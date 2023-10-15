@@ -1,3 +1,4 @@
+use crate::persistence::get_username;
 use crate::session_state::TypedSession;
 use crate::templates::{render_admin_dashboard, GlobalContext, TemplateRegistry};
 use crate::utils::e500;
@@ -26,20 +27,4 @@ pub async fn admin_dashboard(
             &GlobalContext::from_incoming(flash_messages),
             &username,
         )))
-}
-
-#[tracing::instrument(name = "Get username", skip(pool))]
-pub async fn get_username(user_id: Uuid, pool: &PgPool) -> Result<String, anyhow::Error> {
-    let row = sqlx::query!(
-        r#"
-        SELECT username
-        FROM users
-        where user_id = $1
-        "#,
-        user_id
-    )
-    .fetch_one(pool)
-    .await
-    .context("Failed to perform query to get username.")?;
-    Ok(row.username)
 }

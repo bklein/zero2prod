@@ -88,6 +88,8 @@ async fn create_unconfirmed_subscriber(app: &TestApp) -> ConfirmationLinks {
         .error_for_status()
         .unwrap();
 
+    app.dispatch_all_pending_emails().await;
+
     let email_request = &app
         .email_server
         .received_requests()

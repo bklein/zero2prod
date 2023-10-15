@@ -1,3 +1,4 @@
+use crate::persistence::subscriber::{confirm_subscriber, get_subscriber_id_from_token};
 use actix_web::http::StatusCode;
 use actix_web::ResponseError;
 use actix_web::{web, HttpResponse};
@@ -27,32 +28,6 @@ pub async fn confirm(
             Ok(HttpResponse::Ok().finish())
         }
     }
-}
-
-#[tracing::instrument(name = "Mark subscriber as confirmed", skip(subscriber_id, pool))]
-async fn confirm_subscriber(pool: &PgPool, subscriber_id: Uuid) -> Result<(), sqlx::Error> {
-    sqlx::query!(
-        r#"UPDATE subscriptions SET status = 'confirmed' where id = $1"#,
-        subscriber_id
-    )
-    .execute(pool)
-    .await?;
-    Ok(())
-}
-
-#[tracing::instrument(name = "Get subscriber_id from token", skip(subscription_token, pool))]
-async fn get_subscriber_id_from_token(
-    pool: &PgPool,
-    subscription_token: &str,
-) -> Result<Option<Uuid>, sqlx::Error> {
-    let result = sqlx::query!(
-        r#"SELECT subscriber_id FROM subscriptions_tokens
-        WHERE subscriptions_token = $1"#,
-        subscription_token
-    )
-    .fetch_optional(pool)
-    .await?;
-    Ok(result.map(|r| r.subscriber_id))
 }
 
 #[derive(Debug)]

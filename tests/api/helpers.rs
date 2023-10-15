@@ -6,8 +6,9 @@ use uuid::Uuid;
 use wiremock::MockServer;
 use zero2prod::configuration::{get_configuration, DatabaseSettings};
 use zero2prod::email_client::EmailClient;
-use zero2prod::issue_delivery_worker::{try_execute_task, ExecutionOutcome};
-use zero2prod::startup::{get_connection_pool, Application};
+use zero2prod::issue_delivery_worker;
+use zero2prod::startup::{get_connection_pool, Application, ApplicationBaseUrl};
+use zero2prod::subscription_confirmation_delivery_worker;
 use zero2prod::telemetry::{get_subscriber, init_subscriber};
 
 static TRACING: Lazy<()> = Lazy::new(|| {
@@ -121,7 +122,8 @@ impl TestApp {
             assert_eq!(links.len(), 1);
             let raw_link = links[0].as_str().to_owned();
             let mut confirmation_link = reqwest::Url::parse(&raw_link).unwrap();
-            assert_eq!(confirmation_link.host_str().unwrap(), "127.0.0.1");
+            //assert_eq!(confirmation_link.host_str().unwrap(), "127.0.0.1");
+            assert_eq!(confirmation_link.host_str().unwrap(), "localhost");
             confirmation_link.set_port(Some(self.port)).unwrap();
             confirmation_link
         };
@@ -208,10 +210,23 @@ impl TestApp {
 
     pub async fn dispatch_all_pending_emails(&self) {
         loop {
-            if let ExecutionOutcome::EmptyQueue =
-                try_execute_task(&self.connection_pool, &self.email_client)
+            if let issue_delivery_worker::ExecutionOutcome::EmptyQueue =
+                issue_delivery_worker::try_execute_task(&self.connection_pool, &self.email_client)
                     .await
                     .unwrap()
+            {
+                break;
+            }
+        }
+        loop {
+            if let subscription_confirmation_delivery_worker::ExecutionOutcome::EmptyQueue =
+                subscription_confirmation_delivery_worker::try_execute_task(
+                    &self.connection_pool,
+                    &self.email_client,
+                    &ApplicationBaseUrl(self.address.clone()),
+                )
+                .await
+                .unwrap()
             {
                 break;
             }
