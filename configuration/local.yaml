@@ -4,6 +4,6 @@ application:
 database:
   require_ssl: false
 email_client:
-  base_url: 'http://localhost'
+  base_url: 'http://localhost:8008'
   sender_email: 'test@example.com'
   authorization_token: 'myfaketoken'

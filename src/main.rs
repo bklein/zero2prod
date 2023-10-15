@@ -12,12 +12,12 @@ async fn main() -> Result<(), anyhow::Error> {
     let configuration = get_configuration().expect("Could not get config.");
     let application = Application::build(configuration.clone()).await?;
     let application_task = tokio::spawn(application.run_until_stopped());
-    let issue_delivery_worker =
-        issue_delivery_worker::run_worker_until_stopped(configuration.clone());
-    let issue_delivery_worker_task = tokio::spawn(issue_delivery_worker);
-    let confirmation_delivery_worker =
-        subscription_confirmation_delivery_worker::run_worker_until_stopped(configuration.clone());
-    let confirmation_delivery_worker_task = tokio::spawn(confirmation_delivery_worker);
+    let issue_delivery_worker_task = tokio::spawn(issue_delivery_worker::run_worker_until_stopped(
+        configuration.clone(),
+    ));
+    let confirmation_delivery_worker_task = tokio::spawn(
+        subscription_confirmation_delivery_worker::run_worker_until_stopped(configuration.clone()),
+    );
 
     tokio::select! {
         o = application_task => report_exit("API", o),

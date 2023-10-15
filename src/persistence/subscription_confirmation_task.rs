@@ -1,12 +1,8 @@
-use crate::{
-    domain::{
-        tasks::SubscriptionConfirmationTask, NewSubscriber, SubscriberEmail,
-        SubscriberName,
-    },
+use crate::domain::{
+    tasks::SubscriptionConfirmationTask, NewSubscriber, SubscriberEmail, SubscriberName,
 };
 
-use sqlx::{PgPool};
-
+use sqlx::PgPool;
 
 use uuid::Uuid;
 
@@ -86,6 +82,7 @@ pub async fn dequeue_subscription_confirmation_task_and_parse(
                 },
             )))
         } else {
+            delete_subscription_confirmation_task(transaction, raw_task.user).await?;
             Ok(None)
         }
     } else {

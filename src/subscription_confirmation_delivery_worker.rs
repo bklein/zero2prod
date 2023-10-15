@@ -24,6 +24,7 @@ pub async fn try_execute_task(
 ) -> Result<ExecutionOutcome, anyhow::Error> {
     match dequeue_subscription_confirmation_task_and_parse(pool).await? {
         Some((transaction, task)) => {
+            dbg!(&task);
             send_confirmation_email(
                 email_client,
                 task.subscriber,
