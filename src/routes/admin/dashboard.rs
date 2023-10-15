@@ -4,9 +4,9 @@ use crate::templates::{render_admin_dashboard, GlobalContext, TemplateRegistry};
 use crate::utils::e500;
 use actix_web::{http::header::ContentType, web, HttpResponse};
 use actix_web_flash_messages::IncomingFlashMessages;
-use anyhow::Context;
+
 use sqlx::PgPool;
-use uuid::Uuid;
+
 
 pub async fn admin_dashboard(
     session: TypedSession,

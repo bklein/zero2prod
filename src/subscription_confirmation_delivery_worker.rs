@@ -1,6 +1,6 @@
 use crate::{
     configuration::Settings,
-    domain::{NewSubscriber, NewsletterIssue, SubscriberEmail, SubscriberName},
+    domain::{NewSubscriber, NewsletterIssue},
     email_client::EmailClient,
     persistence::subscription_confirmation_task::{
         delete_subscription_confirmation_task, dequeue_subscription_confirmation_task_and_parse,
@@ -8,10 +8,10 @@ use crate::{
     startup::{get_connection_pool, ApplicationBaseUrl},
 };
 use anyhow::Context;
-use sqlx::{PgPool, Postgres, Transaction};
+use sqlx::{PgPool};
 use std::time::Duration;
-use tracing::{field::display, Span};
-use uuid::Uuid;
+
+
 
 pub enum ExecutionOutcome {
     TaskComplete,

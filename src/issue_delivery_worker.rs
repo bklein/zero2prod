@@ -1,6 +1,6 @@
 use crate::{
     configuration::Settings,
-    domain::{subscriber_email::SubscriberEmail, NewsletterIssue},
+    domain::{subscriber_email::SubscriberEmail},
     email_client::EmailClient,
     persistence::{
         delete_newsletter_delivery_task, fetch_newsletter_issue,
@@ -8,11 +8,11 @@ use crate::{
     },
     startup::get_connection_pool,
 };
-use sqlx::{PgPool, Postgres, Transaction};
-use std::fmt::Debug;
+use sqlx::{PgPool};
+
 use std::time::Duration;
 use tracing::{field::display, Span};
-use uuid::Uuid;
+
 
 pub enum ExecutionOutcome {
     TaskComplete,

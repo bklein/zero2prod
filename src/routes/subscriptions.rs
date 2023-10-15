@@ -1,13 +1,13 @@
-use crate::domain::new_subscriber::generate_confirmation_token;
+
 use crate::domain::{NewSubscriber, SubscriberEmail, SubscriberName};
-use crate::persistence::{insert_subscriber, store_token};
+
 use crate::workflows::complete_new_subscriber_workflow;
 use actix_web::http::StatusCode;
 use actix_web::ResponseError;
 use actix_web::{web, HttpResponse};
-use anyhow::Context;
-use sqlx::{PgPool, Postgres, Transaction};
-use uuid::Uuid;
+
+use sqlx::{PgPool};
+
 
 #[derive(serde::Deserialize)]
 pub struct FormData {

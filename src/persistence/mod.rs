@@ -1,7 +1,7 @@
-use crate::domain::{new_subscriber::generate_confirmation_token, NewSubscriber};
-use anyhow::Context;
-use sqlx::{PgPool, Postgres, Transaction};
-use uuid::Uuid;
+
+
+use sqlx::{Postgres, Transaction};
+
 
 type PgTransaction<'a> = Transaction<'a, Postgres>;
 

@@ -1,14 +1,8 @@
-use crate::{
-    configuration::Settings,
-    domain::{subscriber_email::SubscriberEmail, NewsletterIssue},
-    email_client::EmailClient,
-    persistence::fetch_newsletter_issue,
-    startup::get_connection_pool,
-};
+
 use sqlx::{PgPool, Postgres, Transaction};
 use std::fmt::Debug;
-use std::time::Duration;
-use tracing::{field::display, Span};
+
+
 use uuid::Uuid;
 
 use super::PgTransaction;

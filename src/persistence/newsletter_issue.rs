@@ -1,13 +1,10 @@
 use crate::{
-    configuration::Settings,
-    domain::{subscriber_email::SubscriberEmail, NewsletterIssue},
-    email_client::EmailClient,
-    startup::get_connection_pool,
+    domain::{NewsletterIssue},
 };
 use sqlx::{PgPool, Postgres, Transaction};
 use std::fmt::Debug;
-use std::time::Duration;
-use tracing::{field::display, Span};
+
+
 use uuid::Uuid;
 
 #[derive(Debug)]

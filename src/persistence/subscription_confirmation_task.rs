@@ -1,16 +1,13 @@
 use crate::{
-    configuration::Settings,
     domain::{
-        tasks::SubscriptionConfirmationTask, NewSubscriber, NewsletterIssue, SubscriberEmail,
+        tasks::SubscriptionConfirmationTask, NewSubscriber, SubscriberEmail,
         SubscriberName,
     },
-    email_client::EmailClient,
-    startup::{get_connection_pool, ApplicationBaseUrl},
 };
-use anyhow::Context;
-use sqlx::{PgPool, Postgres, Transaction};
-use std::time::Duration;
-use tracing::{field::display, Span};
+
+use sqlx::{PgPool};
+
+
 use uuid::Uuid;
 
 use super::PgTransaction;

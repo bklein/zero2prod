@@ -1,8 +1,8 @@
-use anyhow::Context;
-use sqlx::{PgPool, Postgres, Transaction};
+
+use sqlx::{Postgres, Transaction};
 use uuid::Uuid;
 
-use crate::domain::{new_subscriber::generate_confirmation_token, NewSubscriber};
+
 
 #[derive(Debug)]
 pub struct StoreTokenError(sqlx::Error);
